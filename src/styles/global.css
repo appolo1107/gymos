@@ -1,0 +1,92 @@
+/* src/styles/global.css */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg0: #080808;
+  --bg1: #111111;
+  --bg2: #1a1a1a;
+  --bg3: #222222;
+  --b:   #2a2a2a;
+  --b2:  #333333;
+  --t:   #f0f0f0;
+  --t2:  #888888;
+  --t3:  #444444;
+  --g:   #00e676;
+  --g2:  #00c853;
+  --g3:  #0a2a1a;
+  --g4:  rgba(0,230,118,0.08);
+  --r:   #ff5252;
+  --am:  #ffab40;
+  --bl:  #40c4ff;
+}
+
+body {
+  background: var(--bg0);
+  color: var(--t);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+input, select, button, textarea {
+  font-family: inherit;
+}
+
+a { text-decoration: none; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg1); }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
+
+/* Shared components */
+.gbtn {
+  background: var(--g);
+  color: #000;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.15s, transform 0.15s;
+}
+.gbtn:hover { background: var(--g2); transform: translateY(-1px); }
+.gbtn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+.obtn {
+  background: transparent;
+  color: var(--t);
+  border: 0.5px solid var(--b2);
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.15s;
+}
+.obtn:hover { background: var(--bg2); }
+
+.card {
+  background: var(--bg1);
+  border: 0.5px solid var(--b);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.badge-active  { background:#0a2a1a; color:var(--g);  border:0.5px solid #1a4a2a; }
+.badge-overdue { background:#2a0a0a; color:var(--r);  border:0.5px solid #4a1a1a; }
+.badge-pending { background:#2a2010; color:var(--am); border:0.5px solid #4a3a10; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
