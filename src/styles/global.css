@@ -28,17 +28,13 @@ body {
   position: relative;
 }
 
-/* Logo difuminado de fondo, centrado, en todas las pantallas */
-body::before {
-  content: '';
+/* Logo difuminado de fondo: el <img> se inyecta desde App.jsx */
+.bg-logo {
   position: fixed;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   width: 600px; height: 600px;
-  background-image: url('/assets/logo.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+  object-fit: contain;
   opacity: 0.04;
   filter: blur(2px);
   pointer-events: none;

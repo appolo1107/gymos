@@ -33,6 +33,7 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <img src="/assets/logo.png" alt="" className="bg-logo" />
       <BrowserRouter>
         <Routes>
           <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
