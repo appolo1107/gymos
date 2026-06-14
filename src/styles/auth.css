@@ -1,7 +1,7 @@
 /* src/styles/auth.css */
 .auth-shell {
   min-height: 100vh;
-  background: var(--bg0);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
