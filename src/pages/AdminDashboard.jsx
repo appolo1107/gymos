@@ -96,7 +96,11 @@ export default function AdminDashboard() {
           order_index: i,
         }))
       if (rows.length > 0) {
-        await supabase.from('exercises').insert(rows)
+        const { error: exError } = await supabase.from('exercises').insert(rows)
+        if (exError) {
+          console.error('Error guardando ejercicios:', exError)
+          alert('Error al guardar los ejercicios: ' + exError.message)
+        }
       }
     }
 
