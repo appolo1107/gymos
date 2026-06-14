@@ -6,7 +6,8 @@
   padding: 0 20px; height: 50px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.client-logo-img { height: 32px; width: auto; }
+.client-logo-img { height: 36px; width: 36px; object-fit: cover; border-radius: 7px; border: 0.5px solid var(--b2); }
+.client-logo-text { font-size: 15px; font-weight: 500; color: var(--t); }
 .signout-btn-light {
   background: transparent; border: 0.5px solid var(--b2);
   border-radius: 8px; padding: 6px 12px; color: var(--t2);

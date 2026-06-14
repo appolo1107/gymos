@@ -168,7 +168,11 @@ export default function AdminDashboard() {
     <div className="admin-shell">
       {/* SIDEBAR */}
       <aside className="sidebar">
-        <img src="/assets/logo.png" alt="GymOS" className="sidebar-logo-img" />
+        {gymLogoUrl ? (
+          <img src={gymLogoUrl} alt={profile?.gyms?.name || 'Gimnasio'} className="sidebar-logo-img sidebar-gym-logo" />
+        ) : (
+          <div className="sidebar-logo-placeholder">{profile?.gyms?.name?.charAt(0).toUpperCase() || '🏋️'}</div>
+        )}
         <div className="sidebar-gym">{profile?.gyms?.name || 'Mi Gimnasio'}</div>
 
         <nav className="sidebar-nav">

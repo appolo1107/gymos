@@ -126,7 +126,11 @@ export default function ClientDashboard() {
   return (
     <div className="client-shell">
       <nav className="client-topnav">
-        <img src="/assets/logo.png" alt="GymOS" className="client-logo-img" />
+        {profile?.gyms?.logo_url ? (
+          <img src={profile.gyms.logo_url} alt={profile?.gyms?.name || 'Gimnasio'} className="client-logo-img" />
+        ) : (
+          <div className="client-logo-text">{profile?.gyms?.name || 'Mi Gimnasio'}</div>
+        )}
         <button className="signout-btn-light" onClick={signOut}>← Cerrar sesión</button>
       </nav>
 

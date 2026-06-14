@@ -21,6 +21,23 @@
   padding: 0 20px;
   margin-bottom: 8px;
 }
+.sidebar-gym-logo {
+  height: 44px;
+  width: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 0.5px solid var(--b2);
+  margin: 0 20px 8px;
+}
+.sidebar-logo-placeholder {
+  width: 44px; height: 44px;
+  margin: 0 20px 8px;
+  border-radius: 8px;
+  background: var(--g3);
+  border: 0.5px solid var(--g);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--g); font-weight: 500;
+}
 .sidebar-gym {
   font-size: 11px;
   color: var(--t2);
