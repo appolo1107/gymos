@@ -21,7 +21,7 @@ export default function Login() {
     const { error } = await signIn(email, pass)
     setLoading(false)
     if (error) { setError('Email o contraseña incorrectos'); return }
-    navigate('/admin')
+    navigate('/')
   }
 
   return (
