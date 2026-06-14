@@ -126,7 +126,7 @@ export default function ClientDashboard() {
   return (
     <div className="client-shell">
       <nav className="client-topnav">
-        <div className="client-logo">Gym<span>OS</span></div>
+        <img src="/assets/logo.png" alt="GymOS" className="client-logo-img" />
         <button className="signout-btn-light" onClick={signOut}>← Cerrar sesión</button>
       </nav>
 

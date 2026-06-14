@@ -15,14 +15,12 @@
   padding: 20px 0;
   flex-shrink: 0;
 }
-.sidebar-logo {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--t);
+.sidebar-logo-img {
+  height: 40px;
+  width: auto;
   padding: 0 20px;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
-.sidebar-logo span { color: var(--g); }
 .sidebar-gym {
   font-size: 11px;
   color: var(--t2);
@@ -175,6 +173,14 @@
 .aok.done  { background: var(--g); color: #000; }
 .assigned-check { font-size: 11px; color: var(--g); font-weight: 500; }
 .loading-state { padding: 40px; text-align: center; color: var(--t2); }
+
+.table-head { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+.table-row-5 { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+.invite-code {
+  background: var(--bg3); border: 0.5px solid var(--b2);
+  color: var(--g); font-family: monospace; font-size: 12px;
+  padding: 3px 8px; border-radius: 6px; letter-spacing: 1px;
+}
 
 /* MODALS */
 .modal-overlay {

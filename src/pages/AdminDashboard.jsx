@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     <div className="admin-shell">
       {/* SIDEBAR */}
       <aside className="sidebar">
-        <div className="sidebar-logo">Gym<span>OS</span></div>
+        <img src="/assets/logo.png" alt="GymOS" className="sidebar-logo-img" />
         <div className="sidebar-gym">{profile?.gyms?.name || 'Mi Gimnasio'}</div>
 
         <nav className="sidebar-nav">
@@ -228,10 +228,10 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="clients-table">
                     <div className="table-head">
-                      <div>Cliente</div><div>Membresía</div><div>Rutina</div><div>Acciones</div>
+                      <div>Cliente</div><div>Membresía</div><div>Rutina</div><div>Código acceso</div><div>Acciones</div>
                     </div>
                     {clients.map(c => (
-                      <div key={c.id} className="table-row">
+                      <div key={c.id} className="table-row table-row-5">
                         <div className="client-name-cell">
                           <div className="av">{c.full_name?.charAt(0).toUpperCase() || '?'}</div>
                           <div>
@@ -250,6 +250,13 @@ export default function AdminDashboard() {
                         </div>
                         <div className="muted">
                           {routines.find(r => r.id === c.routine_id)?.name || 'Sin rutina'}
+                        </div>
+                        <div>
+                          {c.auth_user_id ? (
+                            <span className="badge badge-active">✓ Vinculado</span>
+                          ) : (
+                            <code className="invite-code" title="El cliente usa este código para registrarse">{c.invite_code || '—'}</code>
+                          )}
                         </div>
                         <div style={{display:'flex',gap:6}}>
                           <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>

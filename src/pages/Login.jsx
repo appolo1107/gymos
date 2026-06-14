@@ -28,8 +28,7 @@ export default function Login() {
     <div className="auth-shell">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="auth-logo-icon">🏋️</div>
-          <div className="auth-logo-name">Gym<span>OS</span></div>
+          <img src="/assets/logo.png" alt="GymOS" className="auth-logo-img" />
         </div>
 
         <h2 className="auth-title">Bienvenido de nuevo</h2>
