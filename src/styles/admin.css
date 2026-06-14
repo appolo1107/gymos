@@ -200,3 +200,21 @@
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
+
+/* EXERCISES IN ROUTINE MODAL */
+.modal-box-lg { max-width: 600px; }
+.exercises-section { margin-top: 14px; border-top: 0.5px solid var(--b); padding-top: 14px; }
+.exercises-list { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
+.exercise-edit-card {
+  background: var(--bg2); border: 0.5px solid var(--b);
+  border-radius: 10px; padding: 10px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.exercise-edit-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fi-sm { padding: 6px 9px; font-size: 12px; }
+.exercise-specs-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.rmvbtn {
+  background: transparent; border: none; color: var(--t3);
+  cursor: pointer; font-size: 15px; padding: 3px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.rmvbtn:hover { color: var(--r); background: rgba(255,82,82,0.08); }

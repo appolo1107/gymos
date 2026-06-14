@@ -63,11 +63,43 @@ export default function AdminDashboard() {
   }
 
   async function saveRoutine(formData) {
+    const { exercises, ...routineData } = formData
+    let routineId
+
     if (editingRoutine) {
-      await supabase.from('routines').update(formData).eq('id', editingRoutine.id)
+      await supabase.from('routines').update(routineData).eq('id', editingRoutine.id)
+      routineId = editingRoutine.id
+      // borrar ejercicios viejos y reinsertar (más simple que diff)
+      await supabase.from('exercises').delete().eq('routine_id', routineId)
     } else {
-      await supabase.from('routines').insert({ ...formData, gym_id: gymId })
+      const { data, error } = await supabase
+        .from('routines')
+        .insert({ ...routineData, gym_id: gymId })
+        .select()
+        .single()
+      if (error) { console.error(error); return }
+      routineId = data.id
     }
+
+    if (exercises && exercises.length > 0) {
+      const rows = exercises
+        .filter(ex => ex.name?.trim())
+        .map((ex, i) => ({
+          routine_id: routineId,
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight: ex.weight,
+          description: ex.description,
+          image_url: ex.image_url,
+          day_label: ex.day_label,
+          order_index: i,
+        }))
+      if (rows.length > 0) {
+        await supabase.from('exercises').insert(rows)
+      }
+    }
+
     setShowRoutineModal(false)
     setEditingRoutine(null)
     fetchRoutines()
@@ -253,7 +285,7 @@ export default function AdminDashboard() {
                         <div>
                           <div className="routine-name">{r.name}</div>
                           <div className="routine-meta">
-                            {r.days_per_week} días/sem · {r.description || 'Sin descripción'} · {assignedCount} cliente{assignedCount !== 1 ? 's' : ''}
+                            {r.duration_months || 1} mes{(r.duration_months||1) !== 1 ? 'es' : ''} · {r.days_per_week} días/sem · {r.description || 'Sin descripción'} · {assignedCount} cliente{assignedCount !== 1 ? 's' : ''}
                           </div>
                         </div>
                         <div style={{display:'flex',gap:6}}>
@@ -419,22 +451,60 @@ function RoutineModal({ routine, onSave, onClose }) {
     name: routine?.name || '',
     description: routine?.description || '',
     days_per_week: routine?.days_per_week || 3,
+    duration_months: routine?.duration_months || 1,
   })
+  const [exercises, setExercises] = useState([])
+  const [loadingEx, setLoadingEx] = useState(!!routine)
   const [saving, setSaving] = useState(false)
 
   function update(k, v) { setForm(p => ({ ...p, [k]: v })) }
+
+  useEffect(() => {
+    if (!routine) { setLoadingEx(false); return }
+    async function loadExercises() {
+      const { data } = await supabase
+        .from('exercises')
+        .select('*')
+        .eq('routine_id', routine.id)
+        .order('order_index', { ascending: true })
+      setExercises(data || [])
+      setLoadingEx(false)
+    }
+    loadExercises()
+  }, [routine])
+
+  function addExercise() {
+    setExercises(p => [...p, {
+      day_label: 'Semana 1 - Lunes', name: '', sets: '', reps: '', weight: '', description: '', image_url: ''
+    }])
+  }
+
+  function updateExercise(idx, key, value) {
+    setExercises(p => p.map((ex, i) => i === idx ? { ...ex, [key]: value } : ex))
+  }
+
+  function removeExercise(idx) {
+    setExercises(p => p.filter((_, i) => i !== idx))
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.name) return
     setSaving(true)
-    await onSave(form)
+    await onSave({ ...form, exercises })
     setSaving(false)
+  }
+
+  const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
+  const weeksCount = Math.max(1, Math.min(4, (form.duration_months || 1) * 4))
+  const DAY_OPTIONS = []
+  for (let w = 1; w <= weeksCount; w++) {
+    DAYS.forEach(d => DAY_OPTIONS.push(`Semana ${w} - ${d}`))
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
+      <div className="modal-box modal-box-lg" onClick={e => e.stopPropagation()}>
         <p className="modal-title">{routine ? '✏️ Editar rutina' : '+ Nueva rutina'}</p>
         <form onSubmit={handleSubmit}>
           <div className="ff"><label className="fl">Nombre de la rutina *</label>
@@ -442,10 +512,50 @@ function RoutineModal({ routine, onSave, onClose }) {
           <div className="form-grid-2">
             <div className="ff"><label className="fl">Días por semana</label>
               <input className="fi" type="number" min="1" max="7" value={form.days_per_week} onChange={e=>update('days_per_week', parseInt(e.target.value)||1)} /></div>
+            <div className="ff"><label className="fl">Duración (meses)</label>
+              <select className="fi" value={form.duration_months} onChange={e=>update('duration_months', parseInt(e.target.value))}>
+                <option value={1}>1 mes</option>
+                <option value={2}>2 meses</option>
+                <option value={3}>3 meses</option>
+              </select></div>
           </div>
           <div className="ff"><label className="fl">Descripción</label>
             <input className="fi" value={form.description} onChange={e=>update('description', e.target.value)} placeholder="Enfocada en pecho, hombros y tríceps" /></div>
-          <p className="hint-text">💡 Para agregar ejercicios específicos con series, reps y peso, vamos a sumar esa sección en el próximo paso.</p>
+
+          <div className="exercises-section">
+            <div className="section-header" style={{marginBottom:10}}>
+              <h4 className="section-title" style={{fontSize:13}}>Ejercicios</h4>
+              <button type="button" className="ibtn" onClick={addExercise}>+ Agregar ejercicio</button>
+            </div>
+
+            {loadingEx ? (
+              <p className="hint-text">Cargando ejercicios...</p>
+            ) : exercises.length === 0 ? (
+              <p className="hint-text">Todavía no agregaste ejercicios. Click en "+ Agregar ejercicio" para sumar el primero.</p>
+            ) : (
+              <div className="exercises-list">
+                {exercises.map((ex, idx) => (
+                  <div key={idx} className="exercise-edit-card">
+                    <div className="exercise-edit-head">
+                      <select className="fi fi-sm" value={ex.day_label || 'Semana 1 - Lunes'} onChange={e=>updateExercise(idx,'day_label',e.target.value)}>
+                        {DAY_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                      <button type="button" className="rmvbtn" onClick={()=>removeExercise(idx)}>✕</button>
+                    </div>
+                    <input className="fi" placeholder="Nombre del ejercicio (ej: Press de banca)" value={ex.name||''} onChange={e=>updateExercise(idx,'name',e.target.value)} />
+                    <div className="exercise-specs-grid">
+                      <input className="fi fi-sm" placeholder="Series (ej: 4)" value={ex.sets||''} onChange={e=>updateExercise(idx,'sets',e.target.value)} />
+                      <input className="fi fi-sm" placeholder="Reps (ej: 10)" value={ex.reps||''} onChange={e=>updateExercise(idx,'reps',e.target.value)} />
+                      <input className="fi fi-sm" placeholder="Peso (ej: 60 kg)" value={ex.weight||''} onChange={e=>updateExercise(idx,'weight',e.target.value)} />
+                    </div>
+                    <input className="fi" placeholder="Descripción / técnica del ejercicio" value={ex.description||''} onChange={e=>updateExercise(idx,'description',e.target.value)} />
+                    <input className="fi" placeholder="URL de imagen (opcional, ej: https://...)" value={ex.image_url||''} onChange={e=>updateExercise(idx,'image_url',e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="modal-footer">
             <button type="button" className="obtn" onClick={onClose}>Cancelar</button>
             <button type="submit" className="gbtn" disabled={saving}>{saving ? 'Guardando...' : '✓ Guardar rutina'}</button>
