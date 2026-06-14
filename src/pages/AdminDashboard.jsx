@@ -518,7 +518,7 @@ function RoutineModal({ routine, onSave, onClose }) {
             <input className="fi" value={form.name} onChange={e=>update('name', e.target.value)} placeholder="Fuerza A — Tren superior" required /></div>
           <div className="form-grid-2">
             <div className="ff"><label className="fl">Días por semana</label>
-              <input className="fi" type="number" min="1" max="7" value={form.days_per_week} onChange={e=>update('days_per_week', parseInt(e.target.value)||1)} /></div>
+              <input className="fi" type="number" min="1" max="7" value={form.days_per_week} onChange={e=>update('days_per_week', e.target.value === '' ? '' : parseInt(e.target.value))} onBlur={e=>{ if(e.target.value==='') update('days_per_week', 1) }} /></div>
             <div className="ff"><label className="fl">Duración (meses)</label>
               <select className="fi" value={form.duration_months} onChange={e=>update('duration_months', parseInt(e.target.value))}>
                 <option value={1}>1 mes</option>

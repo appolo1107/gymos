@@ -217,9 +217,12 @@ function DayCard({ day, exercises, completions, onToggle }) {
 
   return (
     <div className="rday">
-      <div className="dhdr" onClick={()=>setOpen(!open)}>
+      <div className="dhdr" onClick={() => setOpen(o => !o)} role="button" tabIndex={0}>
         <div className="dtitle">📅 {day} <span className="dbadge">{exercises.length} ejercicios</span></div>
-        {doneCount === exercises.length && exercises.length > 0 && <span className="day-done">✓ Completado</span>}
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          {doneCount === exercises.length && exercises.length > 0 && <span className="day-done">✓ Completado</span>}
+          <span className={`day-chevron ${open ? 'open' : ''}`}>▾</span>
+        </div>
       </div>
       {open && (
         <div className="exlist op">
