@@ -9,42 +9,88 @@ export default function AdminDashboard() {
   const [clients,  setClients]  = useState([])
   const [routines, setRoutines] = useState([])
   const [loading,  setLoading]  = useState(true)
-  const [tab, setTab] = useState('overview') // overview | clients | routines | assign
+  const [tab, setTab] = useState('overview')
+  const [showClientModal, setShowClientModal] = useState(false)
+  const [showRoutineModal, setShowRoutineModal] = useState(false)
+  const [editingClient, setEditingClient] = useState(null)
+  const [editingRoutine, setEditingRoutine] = useState(null)
 
   const gymId = profile?.gym_id
 
   useEffect(() => {
-    if (gymId) { fetchClients(); fetchRoutines() }
+    if (gymId) {
+      fetchClients()
+      fetchRoutines()
+    } else {
+      setLoading(false)
+    }
   }, [gymId])
 
   async function fetchClients() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*, memberships(*)')
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
       .eq('gym_id', gymId)
-      .eq('role', 'client')
-    setClients(data || [])
+      .order('created_at', { ascending: false })
+    if (!error) setClients(data || [])
     setLoading(false)
   }
 
   async function fetchRoutines() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('routines')
       .select('*')
       .eq('gym_id', gymId)
-    setRoutines(data || [])
+      .order('created_at', { ascending: false })
+    if (!error) setRoutines(data || [])
+  }
+
+  async function saveClient(formData) {
+    if (editingClient) {
+      await supabase.from('clients').update(formData).eq('id', editingClient.id)
+    } else {
+      await supabase.from('clients').insert({ ...formData, gym_id: gymId })
+    }
+    setShowClientModal(false)
+    setEditingClient(null)
+    fetchClients()
+  }
+
+  async function deleteClient(id) {
+    if (!window.confirm('¿Eliminar este cliente?')) return
+    await supabase.from('clients').delete().eq('id', id)
+    fetchClients()
+  }
+
+  async function saveRoutine(formData) {
+    if (editingRoutine) {
+      await supabase.from('routines').update(formData).eq('id', editingRoutine.id)
+    } else {
+      await supabase.from('routines').insert({ ...formData, gym_id: gymId })
+    }
+    setShowRoutineModal(false)
+    setEditingRoutine(null)
+    fetchRoutines()
+  }
+
+  async function deleteRoutine(id) {
+    if (!window.confirm('¿Eliminar esta rutina? Se quitará de los clientes que la tengan asignada.')) return
+    await supabase.from('clients').update({ routine_id: null }).eq('routine_id', id)
+    await supabase.from('routines').delete().eq('id', id)
+    fetchRoutines()
+    fetchClients()
   }
 
   async function assignRoutine(clientId, routineId) {
     await supabase
-      .from('profiles')
-      .update({ routine_id: routineId })
+      .from('clients')
+      .update({ routine_id: routineId || null })
       .eq('id', clientId)
     fetchClients()
   }
 
-  const activeClients  = clients.filter(c => c.memberships?.[0]?.status === 'active').length
-  const overdueClients = clients.filter(c => c.memberships?.[0]?.status === 'overdue').length
+  const activeClients  = clients.filter(c => c.membership_status === 'active').length
+  const overdueClients = clients.filter(c => c.membership_status === 'overdue').length
 
   return (
     <div className="admin-shell">
@@ -59,7 +105,6 @@ export default function AdminDashboard() {
             { id:'clients',  icon:'👥', label:'Clientes' },
             { id:'routines', icon:'📋', label:'Rutinas' },
             { id:'assign',   icon:'✅', label:'Asignar rutinas' },
-            { id:'measures', icon:'📏', label:'Medidas' },
           ].map(item => (
             <button
               key={item.id}
@@ -77,14 +122,11 @@ export default function AdminDashboard() {
       {/* MAIN */}
       <main className="admin-main">
         <div className="admin-topbar">
-          <div>
-            <div className="admin-page-title">
-              {tab === 'overview' && 'Resumen general'}
-              {tab === 'clients'  && 'Clientes'}
-              {tab === 'routines' && 'Rutinas'}
-              {tab === 'assign'   && 'Asignar rutinas'}
-              {tab === 'measures' && 'Medidas corporales'}
-            </div>
+          <div className="admin-page-title">
+            {tab === 'overview' && 'Resumen general'}
+            {tab === 'clients'  && 'Clientes'}
+            {tab === 'routines' && 'Rutinas'}
+            {tab === 'assign'   && 'Asignar rutinas'}
           </div>
           <div className="topbar-right">
             <span className="admin-badge">Plan Pro</span>
@@ -101,13 +143,15 @@ export default function AdminDashboard() {
                 <div className="stats-grid">
                   <div className="stat-card">
                     <div className="stat-label">Clientes activos</div>
-                    <div className="stat-value">{activeClients || clients.length}</div>
+                    <div className="stat-value">{activeClients}</div>
                     <div className="stat-sub good">Total: {clients.length}</div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">Pagos vencidos</div>
                     <div className="stat-value">{overdueClients}</div>
-                    <div className="stat-sub bad">{overdueClients > 0 ? 'Requieren atención' : 'Todo al día ✓'}</div>
+                    <div className={`stat-sub ${overdueClients > 0 ? 'bad' : 'good'}`}>
+                      {overdueClients > 0 ? 'Requieren atención' : 'Todo al día ✓'}
+                    </div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">Rutinas cargadas</div>
@@ -126,7 +170,9 @@ export default function AdminDashboard() {
                     <div className="empty-icon">👥</div>
                     <div className="empty-title">Todavía no tenés clientes</div>
                     <div className="empty-sub">Agregá tu primer cliente para empezar</div>
-                    <button className="gbtn" onClick={() => setTab('clients')}>+ Agregar cliente</button>
+                    <button className="gbtn" onClick={() => { setTab('clients'); setShowClientModal(true) }}>
+                      + Agregar cliente
+                    </button>
                   </div>
                 )}
               </div>
@@ -137,7 +183,9 @@ export default function AdminDashboard() {
               <div className="tab-content">
                 <div className="section-header">
                   <h3 className="section-title">Todos los clientes</h3>
-                  <button className="gbtn" style={{fontSize:13,padding:'7px 14px'}}>+ Agregar cliente</button>
+                  <button className="gbtn" style={{fontSize:13,padding:'7px 14px'}} onClick={() => { setEditingClient(null); setShowClientModal(true) }}>
+                    + Agregar cliente
+                  </button>
                 </div>
                 {clients.length === 0 ? (
                   <div className="empty-state">
@@ -148,18 +196,32 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="clients-table">
                     <div className="table-head">
-                      <div>Cliente</div><div>Membresía</div><div>Rutina</div><div>Adherencia</div>
+                      <div>Cliente</div><div>Membresía</div><div>Rutina</div><div>Acciones</div>
                     </div>
                     {clients.map(c => (
                       <div key={c.id} className="table-row">
                         <div className="client-name-cell">
-                          <div className="av">{c.full_name?.charAt(0) || '?'}</div>
-                          {c.full_name}
+                          <div className="av">{c.full_name?.charAt(0).toUpperCase() || '?'}</div>
+                          <div>
+                            <div>{c.full_name}</div>
+                            {c.email && <div style={{fontSize:11,color:'var(--t2)'}}>{c.email}</div>}
+                          </div>
                         </div>
-                        <div><span className="badge badge-active">✓ Activa</span></div>
-                        <div className="muted">{c.routine_id ? 'Asignada' : 'Sin rutina'}</div>
                         <div>
-                          <div className="pbar"><div className="pbfill" style={{width:'75%'}} /></div>
+                          <span className={`badge ${
+                            c.membership_status === 'active' ? 'badge-active' :
+                            c.membership_status === 'overdue' ? 'badge-overdue' : 'badge-pending'
+                          }`}>
+                            {c.membership_status === 'active' ? '✓ Activa' :
+                             c.membership_status === 'overdue' ? '⚠ Vencida' : '⏳ Pendiente'}
+                          </span>
+                        </div>
+                        <div className="muted">
+                          {routines.find(r => r.id === c.routine_id)?.name || 'Sin rutina'}
+                        </div>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
+                          <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
                         </div>
                       </div>
                     ))}
@@ -173,7 +235,9 @@ export default function AdminDashboard() {
               <div className="tab-content">
                 <div className="section-header">
                   <h3 className="section-title">Rutinas cargadas</h3>
-                  <button className="gbtn" style={{fontSize:13,padding:'7px 14px'}}>+ Nueva rutina</button>
+                  <button className="gbtn" style={{fontSize:13,padding:'7px 14px'}} onClick={() => { setEditingRoutine(null); setShowRoutineModal(true) }}>
+                    + Nueva rutina
+                  </button>
                 </div>
                 {routines.length === 0 ? (
                   <div className="empty-state">
@@ -182,18 +246,23 @@ export default function AdminDashboard() {
                     <div className="empty-sub">Creá tu primera rutina y asignala a tus clientes</div>
                   </div>
                 ) : (
-                  routines.map(r => (
-                    <div key={r.id} className="routine-row">
-                      <div>
-                        <div className="routine-name">{r.name}</div>
-                        <div className="routine-meta">{r.days_per_week} días/sem · {r.description}</div>
+                  routines.map(r => {
+                    const assignedCount = clients.filter(c => c.routine_id === r.id).length
+                    return (
+                      <div key={r.id} className="routine-row">
+                        <div>
+                          <div className="routine-name">{r.name}</div>
+                          <div className="routine-meta">
+                            {r.days_per_week} días/sem · {r.description || 'Sin descripción'} · {assignedCount} cliente{assignedCount !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="ibtn" onClick={() => { setEditingRoutine(r); setShowRoutineModal(true) }}>✏️ Editar</button>
+                          <button className="ibtn" onClick={() => deleteRoutine(r.id)}>🗑️</button>
+                        </div>
                       </div>
-                      <div style={{display:'flex',gap:6}}>
-                        <button className="ibtn">✏️ Editar</button>
-                        <button className="ibtn">📋 Copiar</button>
-                      </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             )}
@@ -207,6 +276,12 @@ export default function AdminDashboard() {
                     <div className="empty-icon">✅</div>
                     <div className="empty-title">Sin clientes aún</div>
                     <div className="empty-sub">Primero agregá clientes para poder asignarles rutinas</div>
+                  </div>
+                ) : routines.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">📋</div>
+                    <div className="empty-title">Sin rutinas aún</div>
+                    <div className="empty-sub">Primero creá rutinas en la sección "Rutinas"</div>
                   </div>
                 ) : (
                   <div className="assign-table">
@@ -228,6 +303,24 @@ export default function AdminDashboard() {
           </>
         )}
       </main>
+
+      {/* MODAL: CLIENT */}
+      {showClientModal && (
+        <ClientModal
+          client={editingClient}
+          onSave={saveClient}
+          onClose={() => { setShowClientModal(false); setEditingClient(null) }}
+        />
+      )}
+
+      {/* MODAL: ROUTINE */}
+      {showRoutineModal && (
+        <RoutineModal
+          routine={editingRoutine}
+          onSave={saveRoutine}
+          onClose={() => { setShowRoutineModal(false); setEditingRoutine(null) }}
+        />
+      )}
     </div>
   )
 }
@@ -245,7 +338,7 @@ function AssignRow({ client, routines, onAssign }) {
   return (
     <div className={`assign-row ${saved ? 'confirmed' : ''}`}>
       <div className="client-name-cell">
-        <div className="av">{client.full_name?.charAt(0) || '?'}</div>
+        <div className="av">{client.full_name?.charAt(0).toUpperCase() || '?'}</div>
         {client.full_name}
       </div>
       <select
@@ -263,6 +356,101 @@ function AssignRow({ client, routines, onAssign }) {
           {saved ? '✓ Asignado' : '✓ Confirmar'}
         </button>
         {saved && <span className="assigned-check">✓ Guardado</span>}
+      </div>
+    </div>
+  )
+}
+
+function ClientModal({ client, onSave, onClose }) {
+  const [form, setForm] = useState({
+    full_name: client?.full_name || '',
+    email: client?.email || '',
+    phone: client?.phone || '',
+    membership_status: client?.membership_status || 'active',
+    membership_expires: client?.membership_expires || '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  function update(k, v) { setForm(p => ({ ...p, [k]: v })) }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.full_name) return
+    setSaving(true)
+    await onSave(form)
+    setSaving(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <p className="modal-title">{client ? '✏️ Editar cliente' : '+ Agregar cliente'}</p>
+        <form onSubmit={handleSubmit}>
+          <div className="ff"><label className="fl">Nombre completo *</label>
+            <input className="fi" value={form.full_name} onChange={e=>update('full_name', e.target.value)} placeholder="Martina Aguirre" required /></div>
+          <div className="form-grid-2">
+            <div className="ff"><label className="fl">Email</label>
+              <input className="fi" type="email" value={form.email} onChange={e=>update('email', e.target.value)} placeholder="martina@email.com" /></div>
+            <div className="ff"><label className="fl">Teléfono</label>
+              <input className="fi" value={form.phone} onChange={e=>update('phone', e.target.value)} placeholder="+54 9..." /></div>
+          </div>
+          <div className="form-grid-2">
+            <div className="ff"><label className="fl">Estado de membresía</label>
+              <select className="fi" value={form.membership_status} onChange={e=>update('membership_status', e.target.value)}>
+                <option value="active">Activa</option>
+                <option value="pending">Pendiente</option>
+                <option value="overdue">Vencida</option>
+              </select></div>
+            <div className="ff"><label className="fl">Próximo vencimiento</label>
+              <input className="fi" type="date" value={form.membership_expires} onChange={e=>update('membership_expires', e.target.value)} /></div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="obtn" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="gbtn" disabled={saving}>{saving ? 'Guardando...' : '✓ Guardar cliente'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function RoutineModal({ routine, onSave, onClose }) {
+  const [form, setForm] = useState({
+    name: routine?.name || '',
+    description: routine?.description || '',
+    days_per_week: routine?.days_per_week || 3,
+  })
+  const [saving, setSaving] = useState(false)
+
+  function update(k, v) { setForm(p => ({ ...p, [k]: v })) }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.name) return
+    setSaving(true)
+    await onSave(form)
+    setSaving(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <p className="modal-title">{routine ? '✏️ Editar rutina' : '+ Nueva rutina'}</p>
+        <form onSubmit={handleSubmit}>
+          <div className="ff"><label className="fl">Nombre de la rutina *</label>
+            <input className="fi" value={form.name} onChange={e=>update('name', e.target.value)} placeholder="Fuerza A — Tren superior" required /></div>
+          <div className="form-grid-2">
+            <div className="ff"><label className="fl">Días por semana</label>
+              <input className="fi" type="number" min="1" max="7" value={form.days_per_week} onChange={e=>update('days_per_week', parseInt(e.target.value)||1)} /></div>
+          </div>
+          <div className="ff"><label className="fl">Descripción</label>
+            <input className="fi" value={form.description} onChange={e=>update('description', e.target.value)} placeholder="Enfocada en pecho, hombros y tríceps" /></div>
+          <p className="hint-text">💡 Para agregar ejercicios específicos con series, reps y peso, vamos a sumar esa sección en el próximo paso.</p>
+          <div className="modal-footer">
+            <button type="button" className="obtn" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="gbtn" disabled={saving}>{saving ? 'Guardando...' : '✓ Guardar rutina'}</button>
+          </div>
+        </form>
       </div>
     </div>
   )
