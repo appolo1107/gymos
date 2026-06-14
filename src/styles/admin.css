@@ -79,6 +79,24 @@
   padding: 3px 10px;
   border-radius: 20px;
 }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.gym-logo-upload {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 0.5px solid var(--b2);
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; overflow: hidden; transition: border-color 0.15s;
+}
+.gym-logo-upload:hover { border-color: var(--g); }
+.gym-logo-img { width: 100%; height: 100%; object-fit: cover; }
+.gym-logo-placeholder { font-size: 9px; color: var(--t2); text-align: center; line-height: 1.2; }
+.gym-logo-uploading {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--g);
+}
 .tab-content { padding: 20px 24px; overflow-y: auto; }
 
 /* STATS */
@@ -174,8 +192,8 @@
 .assigned-check { font-size: 11px; color: var(--g); font-weight: 500; }
 .loading-state { padding: 40px; text-align: center; color: var(--t2); }
 
-.table-head { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
-.table-row-5 { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+.table-head { grid-template-columns: 2fr 1fr 1fr 1fr 1.6fr; }
+.table-row-5 { grid-template-columns: 2fr 1fr 1fr 1fr 1.6fr; }
 .invite-code {
   background: var(--bg3); border: 0.5px solid var(--b2);
   color: var(--g); font-family: monospace; font-size: 12px;
@@ -224,3 +242,19 @@
   cursor: pointer; font-size: 15px; padding: 3px 6px; border-radius: 4px; flex-shrink: 0;
 }
 .rmvbtn:hover { color: var(--r); background: rgba(255,82,82,0.08); }
+
+/* ACTIVITY MODAL */
+.activity-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.activity-stat { background: var(--bg2); border: 0.5px solid var(--b); border-radius: 9px; padding: 10px; text-align: center; }
+.activity-stat-val { font-size: 18px; font-weight: 500; color: var(--g); }
+.activity-stat-lbl { font-size: 10px; color: var(--t2); margin-top: 2px; }
+.activity-weeks { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; }
+.activity-week-block { background: var(--bg2); border: 0.5px solid var(--b); border-radius: 9px; padding: 10px; }
+.activity-week-title { font-size: 12px; font-weight: 500; color: var(--t); margin-bottom: 6px; }
+.activity-day-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; color: var(--t2); border-bottom: 0.5px solid var(--b); }
+.activity-day-row:last-child { border-bottom: none; }
+.activity-day-name { color: var(--t); }
+.activity-day-status.done { color: var(--g); font-weight: 500; }
+.activity-day-status.partial { color: var(--am); }
+.activity-measures-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.activity-measure-chip { background: var(--g3); color: var(--g); border: 0.5px solid #1a4a2a; border-radius: 7px; padding: 5px 10px; font-size: 12px; }

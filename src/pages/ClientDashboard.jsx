@@ -132,7 +132,11 @@ export default function ClientDashboard() {
 
       <div className="client-content">
         <div className="chdr">
-          <div className="cavlg">{profile?.full_name?.charAt(0).toUpperCase() || '?'}</div>
+          <div className="cavlg">
+            {profile?.gyms?.logo_url
+              ? <img src={profile.gyms.logo_url} alt={profile?.gyms?.name || 'Gym'} className="cavlg-img" />
+              : (profile?.full_name?.charAt(0).toUpperCase() || '?')}
+          </div>
           <div>
             <div className="cnlg">{profile?.full_name}</div>
             <div className="cgym">🏢 {profile?.gyms?.name || 'Tu gimnasio'}</div>

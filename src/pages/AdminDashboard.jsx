@@ -14,6 +14,9 @@ export default function AdminDashboard() {
   const [showRoutineModal, setShowRoutineModal] = useState(false)
   const [editingClient, setEditingClient] = useState(null)
   const [editingRoutine, setEditingRoutine] = useState(null)
+  const [gymLogoUrl, setGymLogoUrl] = useState(profile?.gyms?.logo_url || null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [viewingActivity, setViewingActivity] = useState(null)
 
   const gymId = profile?.gym_id
 
@@ -25,6 +28,39 @@ export default function AdminDashboard() {
       setLoading(false)
     }
   }, [gymId])
+
+  useEffect(() => {
+    if (profile?.gyms?.logo_url) setGymLogoUrl(profile.gyms.logo_url)
+  }, [profile])
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file || !gymId) return
+    setUploadingLogo(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${gymId}/logo.${ext}`
+      const { error: uploadError } = await supabase
+        .storage
+        .from('gym-logos')
+        .upload(path, file, { upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('gym-logos')
+        .getPublicUrl(path)
+
+      const logoUrl = publicUrlData.publicUrl + '?t=' + Date.now()
+
+      await supabase.from('gyms').update({ logo_url: logoUrl }).eq('id', gymId)
+      setGymLogoUrl(logoUrl)
+    } catch (err) {
+      alert('Error al subir el logo: ' + err.message)
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
 
   async function fetchClients() {
     const { data, error } = await supabase
@@ -166,6 +202,15 @@ export default function AdminDashboard() {
           </div>
           <div className="topbar-right">
             <span className="admin-badge">Plan Pro</span>
+            <label className="gym-logo-upload" title="Subir/cambiar logo de tu gimnasio">
+              {gymLogoUrl ? (
+                <img src={gymLogoUrl} alt="Logo del gimnasio" className="gym-logo-img" />
+              ) : (
+                <span className="gym-logo-placeholder">+ Logo</span>
+              )}
+              <input type="file" accept="image/*" onChange={handleLogoUpload} hidden disabled={uploadingLogo} />
+              {uploadingLogo && <span className="gym-logo-uploading">...</span>}
+            </label>
           </div>
         </div>
 
@@ -263,6 +308,7 @@ export default function AdminDashboard() {
                           )}
                         </div>
                         <div style={{display:'flex',gap:6}}>
+                          <button className="ibtn" onClick={() => setViewingActivity(c)}>📊 Actividad</button>
                           <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
                           <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
                         </div>
@@ -362,6 +408,15 @@ export default function AdminDashboard() {
           routine={editingRoutine}
           onSave={saveRoutine}
           onClose={() => { setShowRoutineModal(false); setEditingRoutine(null) }}
+        />
+      )}
+
+      {/* MODAL: ACTIVITY */}
+      {viewingActivity && (
+        <ActivityModal
+          client={viewingActivity}
+          routines={routines}
+          onClose={() => setViewingActivity(null)}
         />
       )}
     </div>
@@ -572,6 +627,132 @@ function RoutineModal({ routine, onSave, onClose }) {
             <button type="submit" className="gbtn" disabled={saving}>{saving ? 'Guardando...' : '✓ Guardar rutina'}</button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function ActivityModal({ client, routines, onClose }) {
+  const [loading, setLoading] = useState(true)
+  const [exercises, setExercises] = useState([])
+  const [completions, setCompletions] = useState(new Set())
+  const [measures, setMeasures] = useState([])
+
+  const routine = routines.find(r => r.id === client.routine_id)
+
+  useEffect(() => {
+    async function load() {
+      if (client.routine_id) {
+        const { data: exData } = await supabase
+          .from('exercises')
+          .select('*')
+          .eq('routine_id', client.routine_id)
+          .order('order_index', { ascending: true })
+        setExercises(exData || [])
+
+        const { data: compData } = await supabase
+          .from('exercise_completions')
+          .select('exercise_id')
+          .eq('client_record_id', client.id)
+        setCompletions(new Set((compData || []).map(c => c.exercise_id)))
+      }
+
+      const { data: measData } = await supabase
+        .from('client_measures')
+        .select('*')
+        .eq('client_record_id', client.id)
+        .order('created_at', { ascending: true })
+      setMeasures(measData || [])
+
+      setLoading(false)
+    }
+    load()
+  }, [client])
+
+  const totalExercises = exercises.length
+  const completedCount = exercises.filter(ex => completions.has(ex.id)).length
+  const adherence = totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0
+
+  const weeksMap = {}
+  exercises.forEach(ex => {
+    const match = ex.day_label?.match(/Semana (\d+) - (.+)/)
+    const week = match ? match[1] : '1'
+    const day = match ? match[2] : (ex.day_label || 'Sin día')
+    if (!weeksMap[week]) weeksMap[week] = {}
+    if (!weeksMap[week][day]) weeksMap[week][day] = []
+    weeksMap[week][day].push(ex)
+  })
+
+  const latestMeasure = measures[measures.length - 1]
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box modal-box-lg" onClick={e => e.stopPropagation()}>
+        <p className="modal-title">📊 Actividad de {client.full_name}</p>
+
+        {loading ? (
+          <p className="hint-text">Cargando...</p>
+        ) : (
+          <>
+            <div className="activity-summary">
+              <div className="activity-stat">
+                <div className="activity-stat-val">{adherence}%</div>
+                <div className="activity-stat-lbl">Adherencia general</div>
+              </div>
+              <div className="activity-stat">
+                <div className="activity-stat-val">{completedCount}/{totalExercises}</div>
+                <div className="activity-stat-lbl">Ejercicios completados</div>
+              </div>
+              <div className="activity-stat">
+                <div className="activity-stat-val">{measures.length}</div>
+                <div className="activity-stat-lbl">Registros de medidas</div>
+              </div>
+            </div>
+
+            {!routine ? (
+              <p className="hint-text">Este cliente no tiene una rutina asignada.</p>
+            ) : (
+              <>
+                <p className="section-title" style={{marginTop:14, marginBottom:8}}>Rutina: {routine.name}</p>
+                <div className="activity-weeks">
+                  {Object.keys(weeksMap).sort((a,b)=>a-b).map(week => (
+                    <div key={week} className="activity-week-block">
+                      <div className="activity-week-title">Semana {week}</div>
+                      {Object.keys(weeksMap[week]).map(day => {
+                        const dayExercises = weeksMap[week][day]
+                        const doneInDay = dayExercises.filter(ex => completions.has(ex.id)).length
+                        return (
+                          <div key={day} className="activity-day-row">
+                            <span className="activity-day-name">{day}</span>
+                            <span className={`activity-day-status ${doneInDay === dayExercises.length ? 'done' : doneInDay > 0 ? 'partial' : ''}`}>
+                              {doneInDay}/{dayExercises.length} completados
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {latestMeasure && (
+              <>
+                <p className="section-title" style={{marginTop:14, marginBottom:8}}>Última medición</p>
+                <div className="activity-measures-grid">
+                  {latestMeasure.weight_kg != null && <div className="activity-measure-chip">⚖️ {latestMeasure.weight_kg} kg</div>}
+                  {latestMeasure.body_fat_pct != null && <div className="activity-measure-chip">📊 {latestMeasure.body_fat_pct}% grasa</div>}
+                  {latestMeasure.waist_cm != null && <div className="activity-measure-chip">📏 {latestMeasure.waist_cm} cm cintura</div>}
+                  {latestMeasure.muscle_kg != null && <div className="activity-measure-chip">💪 {latestMeasure.muscle_kg} kg músculo</div>}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        <div className="modal-footer">
+          <button type="button" className="obtn" onClick={onClose}>Cerrar</button>
+        </div>
       </div>
     </div>
   )
