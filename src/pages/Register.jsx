@@ -26,9 +26,6 @@ export default function Register() {
   function nextStep() {
     setError('')
     if (role === 'admin' && step === 1 && !gymData.name) { setError('El nombre del gimnasio es obligatorio'); return }
-    if (step === STEPS.length - 1 - (role === 'admin' ? 1 : 0) && role === 'admin') {
-      // validación cuenta (paso 2 en admin)
-    }
     setStep(s => s + 1)
   }
 
@@ -44,29 +41,16 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
-      // Plan Pro → redirigir a Stripe Checkout
-      if (plan === 'pro') {
-        const res = await fetch('/api/create-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gymData, accData }),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Error al iniciar el pago')
-        window.location.href = data.url // redirige a Stripe
-        return
-      }
-
-      // Plan Free → crear directo en Supabase
+      // 1. Crear usuario en Supabase Auth (siempre, para ambos planes)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: accData.email,
         password: accData.pass,
         options: { data: { full_name: accData.name } }
       })
       if (authError) throw authError
-
       const userId = authData.user.id
 
+      // 2. Crear gimnasio en Supabase
       const { data: gymRow, error: gymError } = await supabase
         .from('gyms')
         .insert({
@@ -81,6 +65,7 @@ export default function Register() {
         .single()
       if (gymError) throw gymError
 
+      // 3. Crear perfil admin
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -91,7 +76,36 @@ export default function Register() {
         })
       if (profileError) throw profileError
 
+      // 4. Plan Pro → llamar a Edge Function de MercadoPago y redirigir al pago
+      if (plan === 'pro') {
+        const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL
+        const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY
+
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/mercadopago`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'create_subscription',
+            gym_id: gymRow.id,
+            email:  accData.email,
+            back_url: `${window.location.origin}/admin`,
+          }),
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error al iniciar la suscripción')
+
+        // Redirigir a MercadoPago
+        window.location.href = data.init_point
+        return
+      }
+
+      // Plan Free → ir directo al panel
       navigate('/admin')
+
     } catch (err) {
       setError(err.message || 'Error al crear la cuenta. Intentá de nuevo.')
     } finally {
@@ -106,7 +120,6 @@ export default function Register() {
     if (!validateAccount()) return
     setLoading(true)
     try {
-      // 1. Buscar si el email está pre-cargado por algún gimnasio
       const { data: clientRecord, error: findError } = await supabase
         .from('clients')
         .select('id, gym_id')
@@ -120,24 +133,21 @@ export default function Register() {
         return
       }
 
-      // 2. Crear usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: accData.email,
         password: accData.pass,
         options: { data: { full_name: accData.name } }
       })
       if (authError) throw authError
-
       const userId = authData.user.id
 
-      // 3. Crear perfil de cliente vinculado
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id:       userId,
-          full_name: accData.name,
-          role:     'client',
-          gym_id:   clientRecord.gym_id,
+          id:               userId,
+          full_name:        accData.name,
+          role:             'client',
+          gym_id:           clientRecord.gym_id,
           client_record_id: clientRecord.id
         })
       if (profileError) throw profileError
@@ -157,7 +167,6 @@ export default function Register() {
           <img src="/assets/logo.png" alt="GymOS" className="auth-logo-img" />
         </div>
 
-        {/* STEPS INDICATOR */}
         <div className="steps-row">
           {STEPS.map((s, i) => (
             <div key={i} style={{display:'flex',alignItems:'center',gap:6}}>
@@ -171,7 +180,6 @@ export default function Register() {
 
         {error && <div className="auth-error">{error}</div>}
 
-        {/* STEP 0: ROL (compartido) */}
         {step === 0 && (
           <>
             <h2 className="auth-title">¿Quién sos?</h2>
@@ -196,13 +204,10 @@ export default function Register() {
           </>
         )}
 
-        {/* ============ FLUJO CLIENTE ============ */}
         {role === 'client' && step === 1 && (
           <>
             <h2 className="auth-title">Creá tu cuenta</h2>
-            <p className="auth-sub" style={{marginBottom:18}}>
-              Usá el mismo email que le diste a tu gimnasio
-            </p>
+            <p className="auth-sub" style={{marginBottom:18}}>Usá el mismo email que le diste a tu gimnasio</p>
             <form onSubmit={handleRegisterClient}>
               <div className="ff"><label className="fl">Tu nombre completo *</label>
                 <input className="fi" placeholder="Tu nombre completo" value={accData.name} onChange={e=>updateAcc('name',e.target.value)} /></div>
@@ -222,7 +227,6 @@ export default function Register() {
           </>
         )}
 
-        {/* ============ FLUJO ADMIN ============ */}
         {role === 'admin' && step === 1 && (
           <>
             <h2 className="auth-title">Datos de tu gimnasio</h2>
@@ -276,13 +280,13 @@ export default function Register() {
             <div className={`plan-card ${plan==='pro'?'sel':''}`} onClick={()=>setPlan('pro')}>
               <div className="plan-badge">⭐ Popular</div>
               <div className="plan-name">Plan Pro</div>
-              <div className="plan-price">$1 <span>/ mes</span></div>
+              <div className="plan-price">$5 <span>/ mes</span></div>
               <div className="plan-feats">✓ Clientes ilimitados<br/>✓ Rutinas ilimitadas<br/>✓ Medidas corporales<br/>✓ Estadísticas avanzadas<br/>✓ Soporte prioritario</div>
               <div className={`plan-check ${plan==='pro'?'sel':''}`}>{plan==='pro'?'✓':''}</div>
             </div>
 
             <button className="gbtn" onClick={handleRegisterAdmin} disabled={loading} style={{width:'100%',justifyContent:'center'}}>
-              {loading ? 'Creando gimnasio...' : '🚀 Crear mi gimnasio'}
+              {loading ? 'Procesando...' : plan === 'pro' ? '💳 Crear gimnasio y pagar' : '🚀 Crear mi gimnasio'}
             </button>
             <div style={{textAlign:'center',marginTop:12}}>
               <button className="back-link" onClick={()=>setStep(2)}>← Atrás</button>

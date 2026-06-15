@@ -1,13 +1,4 @@
 // supabase/functions/mercadopago/index.ts
-//
-// Edge Function de GymOS para Mercado Pago.
-// Crea un link de suscripción (preapproval) para que el admin
-// del gimnasio pague la membresía mensual.
-//
-// El Access Token se lee de una variable de entorno secreta
-// (NUNCA se expone al frontend).
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
@@ -19,14 +10,15 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Responder preflight CORS
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
   try {
-    const { action, gym_id, email, back_url } = await req.json()
+    const body = await req.json()
+    const { action, gym_id, email, back_url } = body
 
+    // ── CREATE SUBSCRIPTION ──────────────────────────────────────────
     if (action === "create_subscription") {
       if (!gym_id || !email) {
         return new Response(
@@ -35,11 +27,8 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Crear preapproval (suscripción) en Mercado Pago
-      // Precio: $5 USD/mes recurrente. El primer mes a $1 se maneja
-      // dando de alta manualmente el primer cobro distinto (ver nota abajo).
       const preapprovalBody = {
-        reason: "GymOS - Suscripcion mensual",
+        reason: "GymOS Pro - Suscripcion mensual",
         external_reference: gym_id,
         payer_email: email,
         back_url: back_url || "https://gymos.vercel.app/admin",
@@ -47,7 +36,7 @@ Deno.serve(async (req) => {
           frequency: 1,
           frequency_type: "months",
           transaction_amount: 5,
-          currency_id: "ARS", // Ajustar segun el pais del comercio (ARS, MXN, COP, etc.)
+          currency_id: "USD",  // ✅ USD para cobros internacionales
         },
         status: "pending",
       }
@@ -64,19 +53,22 @@ Deno.serve(async (req) => {
       const mpData = await mpRes.json()
 
       if (!mpRes.ok) {
+        console.error("MercadoPago error:", JSON.stringify(mpData))
         return new Response(
           JSON.stringify({ error: "Error de Mercado Pago", details: mpData }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         )
       }
 
-      // Guardar el id de suscripcion en la tabla gyms
+      // Guardar subscription id en gyms
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2")
       const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
       await supabase
         .from("gyms")
         .update({
           mp_subscription_id: mpData.id,
           mp_subscription_status: mpData.status,
+          plan: "pro",
         })
         .eq("id", gym_id)
 
@@ -86,6 +78,7 @@ Deno.serve(async (req) => {
       )
     }
 
+    // ── CHECK STATUS ─────────────────────────────────────────────────
     if (action === "check_status") {
       if (!gym_id) {
         return new Response(
@@ -94,6 +87,7 @@ Deno.serve(async (req) => {
         )
       }
 
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2")
       const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
       const { data: gym } = await supabase
         .from("gyms")
@@ -108,13 +102,11 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Consultar estado actual en Mercado Pago
       const mpRes = await fetch(`https://api.mercadopago.com/preapproval/${gym.mp_subscription_id}`, {
         headers: { "Authorization": `Bearer ${MP_ACCESS_TOKEN}` },
       })
       const mpData = await mpRes.json()
 
-      // Actualizar estado en la base si cambio
       if (mpData.status && mpData.status !== gym.mp_subscription_status) {
         await supabase
           .from("gyms")
@@ -134,6 +126,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (err) {
+    console.error("Edge Function crash:", err)
     return new Response(
       JSON.stringify({ error: err.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
