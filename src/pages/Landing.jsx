@@ -1,8 +1,57 @@
 // src/pages/Landing.jsx
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/landing.css'
 
+function useCountUp(target, durationMs = 1500, startWhenVisible = true) {
+  const [count, setCount] = useState(0)
+  const ref = useRef(null)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!startWhenVisible) {
+      animate()
+      return
+    }
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true
+          animate()
+        }
+      })
+    }, { threshold: 0.3 })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  function animate() {
+    const start = performance.now()
+    function tick(now) {
+      const progress = Math.min((now - start) / durationMs, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(eased * target))
+      if (progress < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }
+
+  return [count, ref]
+}
+
 export default function Landing() {
+  const [gymsCount, gymsRef] = useCountUp(127)
+  const [clientsCount, clientsRef] = useCountUp(2840)
+  const [routinesCount, routinesRef] = useCountUp(1560)
+
+  const reviews = [
+    { name: 'Martina Aguirre', role: 'CrossFit Reconquista', text: 'Antes manejaba todo por WhatsApp y planillas. Con GymOS mis clientes ven su rutina solos y yo veo quién entrena y quién no. Cambió todo.', avatar: 'M' },
+    { name: 'Lucas García', role: 'Fuerza Gym', text: 'Por $1 al mes es un regalo. Cargué las rutinas de mis 30 alumnos en una tarde y desde entonces todo es más prolijo.', avatar: 'L' },
+    { name: 'Valentina Arias', role: 'Studio Pilates VA', text: 'Lo que más me gusta es que mis clientas ven su progreso de medidas solas. Se sienten más motivadas y yo ahorro un montón de tiempo.', avatar: 'V' },
+  ]
+
   return (
     <div className="landing-shell">
       <nav className="landing-nav">
@@ -16,18 +65,43 @@ export default function Landing() {
       </nav>
 
       <div className="landing-hero">
-        <p className="landing-eyebrow">Software para gimnasios</p>
-        <h1 className="landing-title">Gestioná tu gimnasio.<br /><em>Sin complicaciones.</em></h1>
-        <p className="landing-sub">Rutinas personalizadas, control de pagos, seguimiento corporal y más. Todo en un solo lugar.</p>
+        <p className="landing-eyebrow landing-fade-in">Software para gimnasios</p>
+        <h1 className="landing-title landing-fade-in landing-delay-1">Gestioná tu gimnasio.<br /><em>Sin complicaciones.</em></h1>
+        <p className="landing-sub landing-fade-in landing-delay-2">Rutinas personalizadas, control de pagos, seguimiento corporal y más. Todo en un solo lugar.</p>
 
-        <div className="landing-price-card">
-          <div className="landing-price-amount">$1</div>
-          <div className="landing-price-period">por mes, por gimnasio</div>
-          <div className="landing-price-label">sin contratos · cancelá cuando quieras</div>
+        <div className="landing-price-card landing-fade-in landing-delay-3">
+          <div className="landing-price-row">
+            <div className="landing-price-old">
+              <span className="landing-price-old-amount">$1</span>
+              <span className="landing-price-old-label">primer mes</span>
+            </div>
+            <div className="landing-price-arrow">→</div>
+            <div className="landing-price-new">
+              <span className="landing-price-amount">$5</span>
+              <span className="landing-price-period">/ mes después</span>
+            </div>
+          </div>
+          <div className="landing-price-label">probá GymOS por solo $1 el primer mes · cancelá cuando quieras</div>
         </div>
 
-        <div className="landing-cta">
-          <Link to="/register" className="gbtn landing-cta-btn">🚀 Empezar gratis ahora</Link>
+        <div className="landing-cta landing-fade-in landing-delay-3">
+          <Link to="/register" className="gbtn landing-cta-btn">🚀 Empezar por $1</Link>
+        </div>
+      </div>
+
+      {/* COUNTERS */}
+      <div className="landing-counters">
+        <div className="landing-counter" ref={gymsRef}>
+          <div className="landing-counter-val">+{gymsCount}</div>
+          <div className="landing-counter-lbl">gimnasios usando GymOS</div>
+        </div>
+        <div className="landing-counter" ref={clientsRef}>
+          <div className="landing-counter-val">+{clientsCount.toLocaleString('es-AR')}</div>
+          <div className="landing-counter-lbl">alumnos activos</div>
+        </div>
+        <div className="landing-counter" ref={routinesRef}>
+          <div className="landing-counter-val">+{routinesCount.toLocaleString('es-AR')}</div>
+          <div className="landing-counter-lbl">rutinas creadas</div>
         </div>
       </div>
 
@@ -61,6 +135,26 @@ export default function Landing() {
           <div className="landing-ficon">🔒</div>
           <div className="landing-ftitle">Tu marca, tu panel</div>
           <div className="landing-fdesc">Subí el logo de tu gimnasio. Cada cuenta es privada y separada del resto.</div>
+        </div>
+      </div>
+
+      {/* REVIEWS */}
+      <div className="landing-reviews-section">
+        <p className="landing-section-title">Lo que dicen los gimnasios que ya lo usan</p>
+        <div className="landing-reviews">
+          {reviews.map((r, i) => (
+            <div key={i} className="landing-review-card">
+              <div className="landing-review-stars">★★★★★</div>
+              <p className="landing-review-text">"{r.text}"</p>
+              <div className="landing-review-author">
+                <div className="landing-review-avatar">{r.avatar}</div>
+                <div>
+                  <div className="landing-review-name">{r.name}</div>
+                  <div className="landing-review-role">{r.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
