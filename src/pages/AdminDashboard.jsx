@@ -40,14 +40,25 @@ export default function AdminDashboard() {
 
   const [subStatus, setSubStatus] = useState(profile?.gyms?.mp_subscription_status || 'none')
   const [subLoading, setSubLoading] = useState(false)
+  const [subStep, setSubStep] = useState('none') // none | paid_first | active
 
   useEffect(() => {
     setSubStatus(profile?.gyms?.mp_subscription_status || 'none')
   }, [profile?.gyms?.mp_subscription_status])
 
+  // Al volver de MercadoPago con pago exitoso, activar la suscripción mensual
   useEffect(() => {
     if (!gymId) return
-    if (subStatus === 'pending' || subStatus === 'authorized') {
+    const params = new URLSearchParams(window.location.search)
+    const paymentStatus = params.get('collection_status') || params.get('status')
+    const paymentId = params.get('payment_id') || params.get('collection_id')
+
+    if (paymentStatus === 'approved' && paymentId) {
+      // Limpiar la URL
+      window.history.replaceState({}, '', '/admin')
+      // Activar la suscripción mensual
+      activateSubscription()
+    } else if (subStatus === 'pending' || subStatus === 'authorized') {
       checkSubscriptionStatus()
     }
   }, [gymId])
@@ -59,7 +70,29 @@ export default function AdminDashboard() {
       })
       if (data?.status) setSubStatus(data.status)
     } catch (err) {
-      // silencioso, no molestar al usuario si falla el check
+      // silencioso
+    }
+  }
+
+  async function activateSubscription() {
+    setSubLoading(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('mercadopago', {
+        body: { action: 'activate_subscription', gym_id: gymId }
+      })
+      if (error) throw error
+      if (data?.init_point) {
+        // Redirigir al cliente para que apruebe la suscripción mensual
+        setSubStep('paid_first')
+        window.location.href = data.init_point
+      } else {
+        setSubStatus(data?.status || 'authorized')
+        setSubStep('active')
+      }
+    } catch (err) {
+      alert('Error al activar la suscripción mensual: ' + err.message)
+    } finally {
+      setSubLoading(false)
     }
   }
 
@@ -78,7 +111,7 @@ export default function AdminDashboard() {
       if (error) throw error
       if (data?.error) throw new Error(JSON.stringify(data.error))
       if (data?.init_point) {
-        window.location.href = data.init_point
+        window.location.href = data.init_point // pago inicial $1500
       }
     } catch (err) {
       alert('Error al iniciar la suscripción: ' + err.message)
@@ -279,9 +312,11 @@ export default function AdminDashboard() {
           <div className="topbar-right">
             {subStatus === 'authorized' ? (
               <span className="admin-badge">✓ Suscripción activa</span>
+            ) : subStep === 'paid_first' || subLoading ? (
+              <span className="admin-badge" style={{background:'#f59e0b'}}>⏳ Activando suscripción...</span>
             ) : (
               <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
-                {subLoading ? 'Redirigiendo...' : '💳 Activar suscripción $5/mes'}
+                💳 Activar membresía — $1 primer mes, luego $5/mes
               </button>
             )}
             <label className="gym-logo-upload" title="Subir/cambiar logo de tu gimnasio">
