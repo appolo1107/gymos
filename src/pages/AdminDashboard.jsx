@@ -40,59 +40,29 @@ export default function AdminDashboard() {
 
   const [subStatus, setSubStatus] = useState(profile?.gyms?.mp_subscription_status || 'none')
   const [subLoading, setSubLoading] = useState(false)
-  const [subStep, setSubStep] = useState('none') // none | paid_first | active
 
   useEffect(() => {
     setSubStatus(profile?.gyms?.mp_subscription_status || 'none')
   }, [profile?.gyms?.mp_subscription_status])
 
-  // Al volver de MercadoPago con pago exitoso, activar la suscripción mensual
+  // Al cargar el panel, verificar si hay un pago aprobado en MP
   useEffect(() => {
     if (!gymId) return
-    const params = new URLSearchParams(window.location.search)
-    const paymentStatus = params.get('collection_status') || params.get('status')
-    const paymentId = params.get('payment_id') || params.get('collection_id')
-
-    if (paymentStatus === 'approved' && paymentId) {
-      // Limpiar la URL
-      window.history.replaceState({}, '', '/admin')
-      // Activar la suscripción mensual
-      activateSubscription()
-    } else if (subStatus === 'pending' || subStatus === 'authorized') {
-      checkSubscriptionStatus()
-    }
+    if (window.location.search) window.history.replaceState({}, '', '/admin')
+    if (subStatus === 'authorized') return
+    checkPayment()
   }, [gymId])
 
-  async function checkSubscriptionStatus() {
+  async function checkPayment() {
     try {
       const { data } = await supabase.functions.invoke('mercadopago', {
-        body: { action: 'check_status', gym_id: gymId }
+        body: { action: 'check_payment', gym_id: gymId }
       })
-      if (data?.status) setSubStatus(data.status)
-    } catch (err) {
-      // silencioso
-    }
-  }
-
-  async function activateSubscription() {
-    setSubLoading(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('mercadopago', {
-        body: { action: 'activate_subscription', gym_id: gymId }
-      })
-      if (error) throw error
-      if (data?.init_point) {
-        // Redirigir al cliente para que apruebe la suscripción mensual
-        setSubStep('paid_first')
-        window.location.href = data.init_point
-      } else {
-        setSubStatus(data?.status || 'authorized')
-        setSubStep('active')
+      if (data?.paid && data?.status) {
+        setSubStatus(data.status)
       }
     } catch (err) {
-      alert('Error al activar la suscripción mensual: ' + err.message)
-    } finally {
-      setSubLoading(false)
+      // silencioso
     }
   }
 
@@ -312,8 +282,8 @@ export default function AdminDashboard() {
           <div className="topbar-right">
             {subStatus === 'authorized' ? (
               <span className="admin-badge">✓ Suscripción activa</span>
-            ) : subStep === 'paid_first' || subLoading ? (
-              <span className="admin-badge" style={{background:'#f59e0b'}}>⏳ Activando suscripción...</span>
+            ) : subLoading ? (
+              <span className="admin-badge" style={{background:'#f59e0b'}}>⏳ Procesando...</span>
             ) : (
               <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
                 💳 Activar membresía — $1 primer mes, luego $5/mes
