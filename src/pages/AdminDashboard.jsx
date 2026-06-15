@@ -105,7 +105,7 @@ export default function AdminDashboard() {
           action: 'create_subscription',
           gym_id: gymId,
           email: user.email,
-          back_url: window.location.origin + '/admin',
+          back_url:'https://gymos-puce.vercel.app/admin',
         }
       })
       if (error) throw error
