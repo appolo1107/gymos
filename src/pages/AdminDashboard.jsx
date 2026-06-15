@@ -9,7 +9,7 @@ import { EXERCISE_CATEGORIES, ExerciseIcon } from '../lib/exerciseIcons'
 import '../styles/admin.css'
 
 export default function AdminDashboard() {
-  const { profile, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const [clients,  setClients]  = useState([])
   const [routines, setRoutines] = useState([])
   const [loading,  setLoading]  = useState(true)
@@ -37,6 +37,55 @@ export default function AdminDashboard() {
   useEffect(() => {
     setGymLogoUrl(profile?.gyms?.logo_url || null)
   }, [profile?.gyms?.logo_url])
+
+  const [subStatus, setSubStatus] = useState(profile?.gyms?.mp_subscription_status || 'none')
+  const [subLoading, setSubLoading] = useState(false)
+
+  useEffect(() => {
+    setSubStatus(profile?.gyms?.mp_subscription_status || 'none')
+  }, [profile?.gyms?.mp_subscription_status])
+
+  useEffect(() => {
+    if (!gymId) return
+    if (subStatus === 'pending' || subStatus === 'authorized') {
+      checkSubscriptionStatus()
+    }
+  }, [gymId])
+
+  async function checkSubscriptionStatus() {
+    try {
+      const { data } = await supabase.functions.invoke('mercadopago', {
+        body: { action: 'check_status', gym_id: gymId }
+      })
+      if (data?.status) setSubStatus(data.status)
+    } catch (err) {
+      // silencioso, no molestar al usuario si falla el check
+    }
+  }
+
+  async function handleSubscribe() {
+    if (!gymId || !user?.email) return
+    setSubLoading(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('mercadopago', {
+        body: {
+          action: 'create_subscription',
+          gym_id: gymId,
+          email: user.email,
+          back_url: window.location.origin + '/admin',
+        }
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(JSON.stringify(data.error))
+      if (data?.init_point) {
+        window.location.href = data.init_point
+      }
+    } catch (err) {
+      alert('Error al iniciar la suscripción: ' + err.message)
+    } finally {
+      setSubLoading(false)
+    }
+  }
 
   async function removeLogo() {
     if (!gymId) return
@@ -228,7 +277,13 @@ export default function AdminDashboard() {
             {tab === 'assign'   && 'Asignar rutinas'}
           </div>
           <div className="topbar-right">
-            <span className="admin-badge">Plan Pro</span>
+            {subStatus === 'authorized' ? (
+              <span className="admin-badge">✓ Suscripción activa</span>
+            ) : (
+              <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
+                {subLoading ? 'Redirigiendo...' : '💳 Activar suscripción $5/mes'}
+              </button>
+            )}
             <label className="gym-logo-upload" title="Subir/cambiar logo de tu gimnasio">
               {gymLogoUrl ? (
                 <img src={gymLogoUrl} alt="Logo del gimnasio" className="gym-logo-img" />
