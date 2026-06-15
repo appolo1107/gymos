@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+         AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType } from 'docx'
+import { saveAs } from 'file-saver'
 import '../styles/admin.css'
 
 export default function AdminDashboard() {
@@ -746,6 +749,116 @@ function ActivityModal({ client, routines, onClose }) {
 
   const latestMeasure = measures[measures.length - 1]
 
+  async function exportToWord() {
+    const border = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" }
+    const borders = { top: border, bottom: border, left: border, right: border }
+    const colWidths = [1800, 3600, 1200, 1200, 1560, 1200] // suma = 9360
+    const headers = ['Semana / Día', 'Ejercicio', 'Series', 'Reps', 'Peso', 'Completado']
+
+    function headerCell(text, width) {
+      return new TableCell({
+        borders,
+        width: { size: width, type: WidthType.DXA },
+        shading: { fill: "1A1A1A", type: ShadingType.CLEAR },
+        margins: { top: 80, bottom: 80, left: 120, right: 120 },
+        children: [new Paragraph({ children: [new TextRun({ text, bold: true, color: "FFFFFF", size: 20 })] })]
+      })
+    }
+
+    function dataCell(text, width, opts = {}) {
+      return new TableCell({
+        borders,
+        width: { size: width, type: WidthType.DXA },
+        shading: opts.fill ? { fill: opts.fill, type: ShadingType.CLEAR } : undefined,
+        margins: { top: 60, bottom: 60, left: 120, right: 120 },
+        children: [new Paragraph({ children: [new TextRun({ text, size: 20, bold: opts.bold, color: opts.color })] })]
+      })
+    }
+
+    const rows = [
+      new TableRow({ children: headers.map((h, i) => headerCell(h, colWidths[i])) })
+    ]
+
+    Object.keys(weeksMap).sort((a,b)=>a-b).forEach(week => {
+      Object.keys(weeksMap[week]).forEach(day => {
+        weeksMap[week][day].forEach((ex, i) => {
+          const done = completions.has(ex.id)
+          rows.push(new TableRow({
+            children: [
+              dataCell(i === 0 ? `Semana ${week}\n${day}` : '', colWidths[0]),
+              dataCell(ex.name || '-', colWidths[1]),
+              dataCell(ex.sets || '-', colWidths[2]),
+              dataCell(ex.reps || '-', colWidths[3]),
+              dataCell(ex.weight || '-', colWidths[4]),
+              dataCell(done ? '✓ Sí' : '— No', colWidths[5], {
+                fill: done ? "D7F2E0" : "FBE0E0",
+                color: done ? "1E7C3F" : "B23A3A",
+                bold: true
+              }),
+            ]
+          }))
+        })
+      })
+    })
+
+    const measureLines = []
+    if (latestMeasure) {
+      if (latestMeasure.weight_kg != null) measureLines.push(`Peso: ${latestMeasure.weight_kg} kg`)
+      if (latestMeasure.body_fat_pct != null) measureLines.push(`Grasa corporal: ${latestMeasure.body_fat_pct}%`)
+      if (latestMeasure.waist_cm != null) measureLines.push(`Cintura: ${latestMeasure.waist_cm} cm`)
+      if (latestMeasure.hip_cm != null) measureLines.push(`Cadera: ${latestMeasure.hip_cm} cm`)
+      if (latestMeasure.chest_cm != null) measureLines.push(`Pecho: ${latestMeasure.chest_cm} cm`)
+      if (latestMeasure.muscle_kg != null) measureLines.push(`Masa muscular: ${latestMeasure.muscle_kg} kg`)
+    }
+
+    const doc = new Document({
+      styles: {
+        default: { document: { run: { font: "Arial", size: 22 } } },
+        paragraphStyles: [
+          { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
+            run: { size: 32, bold: true, font: "Arial" },
+            paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 0 } },
+          { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
+            run: { size: 26, bold: true, font: "Arial" },
+            paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 1 } },
+        ]
+      },
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 12240, height: 15840 },
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+          }
+        },
+        children: [
+          new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(`Reporte de actividad — ${client.full_name}`)] }),
+          new Paragraph({ children: [new TextRun({ text: `Gimnasio: ${client.gym_name || ''}`, size: 20, color: "666666" })] }),
+          new Paragraph({ children: [new TextRun({ text: `Fecha del reporte: ${new Date().toLocaleDateString('es-AR')}`, size: 20, color: "666666" })] }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ children: [new TextRun({ text: `Rutina: `, bold: true }), new TextRun(routine?.name || 'Sin rutina asignada')] }),
+          new Paragraph({ children: [
+            new TextRun({ text: `Adherencia general: `, bold: true }),
+            new TextRun(`${adherence}% (${completedCount}/${totalExercises} ejercicios completados)`)
+          ]}),
+          new Paragraph({ text: '' }),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Detalle de la rutina")] }),
+          rows.length > 1
+            ? new Table({ width: { size: 9360, type: WidthType.DXA }, columnWidths: colWidths, rows })
+            : new Paragraph({ children: [new TextRun("Este cliente no tiene ejercicios cargados.")] }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Última medición corporal")] }),
+          ...(measureLines.length > 0
+            ? measureLines.map(line => new Paragraph({ children: [new TextRun(line)] }))
+            : [new Paragraph({ children: [new TextRun("Sin registros de medidas.")] })]),
+        ]
+      }]
+    })
+
+    const blob = await Packer.toBlob(doc)
+    const safeName = (client.full_name || 'cliente').replace(/[^a-zA-Z0-9]+/g, '_')
+    saveAs(blob, `Rutina_${safeName}_${new Date().toISOString().slice(0,10)}.docx`)
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box modal-box-lg" onClick={e => e.stopPropagation()}>
@@ -813,6 +926,11 @@ function ActivityModal({ client, routines, onClose }) {
 
         <div className="modal-footer">
           <button type="button" className="obtn" onClick={onClose}>Cerrar</button>
+          {!loading && (
+            <button type="button" className="gbtn" onClick={exportToWord}>
+              📄 Descargar reporte (.docx)
+            </button>
+          )}
         </div>
       </div>
     </div>
