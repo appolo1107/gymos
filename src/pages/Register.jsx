@@ -191,7 +191,7 @@ export default function Register() {
             </p>
             <form onSubmit={handleRegisterClient}>
               <div className="ff"><label className="fl">Tu nombre completo *</label>
-                <input className="fi" placeholder="Martina Aguirre" value={accData.name} onChange={e=>updateAcc('name',e.target.value)} /></div>
+                <input className="fi" placeholder="Tu nombre completo" value={accData.name} onChange={e=>updateAcc('name',e.target.value)} /></div>
               <div className="ff"><label className="fl">Email *</label>
                 <input className="fi" type="email" placeholder="martina@email.com" value={accData.email} onChange={e=>updateAcc('email',e.target.value)} /></div>
               <div className="ff"><label className="fl">Contraseña * (mín. 8 caracteres)</label>
@@ -233,7 +233,7 @@ export default function Register() {
             <h2 className="auth-title">Creá tu cuenta</h2>
             <p className="auth-sub" style={{marginBottom:18}}>Con esto vas a ingresar al panel cada vez</p>
             <div className="ff"><label className="fl">Tu nombre completo *</label>
-              <input className="fi" placeholder="Sebastián Aguirre" value={accData.name} onChange={e=>updateAcc('name',e.target.value)} /></div>
+              <input className="fi" placeholder="Tu nombre completo" value={accData.name} onChange={e=>updateAcc('name',e.target.value)} /></div>
             <div className="ff"><label className="fl">Email *</label>
               <input className="fi" type="email" placeholder="sebastian@migym.com" value={accData.email} onChange={e=>updateAcc('email',e.target.value)} /></div>
             <div className="ff"><label className="fl">Contraseña * (mín. 8 caracteres)</label>
