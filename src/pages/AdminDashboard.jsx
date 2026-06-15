@@ -293,6 +293,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div>
+                          <span className="cell-label">Membresía</span>
                           <span className={`badge ${
                             c.membership_status === 'active' ? 'badge-active' :
                             c.membership_status === 'overdue' ? 'badge-overdue' : 'badge-pending'
@@ -302,9 +303,11 @@ export default function AdminDashboard() {
                           </span>
                         </div>
                         <div className="muted">
+                          <span className="cell-label">Rutina</span>
                           {routines.find(r => r.id === c.routine_id)?.name || 'Sin rutina'}
                         </div>
                         <div>
+                          <span className="cell-label">Código acceso</span>
                           {c.auth_user_id ? (
                             <span className="badge badge-active">✓ Vinculado</span>
                           ) : (
