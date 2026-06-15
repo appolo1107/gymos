@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { ExerciseIcon } from '../lib/exerciseIcons'
 import '../styles/client.css'
 
 export default function ClientDashboard() {
@@ -237,7 +238,7 @@ function DayCard({ day, exercises, completions, onToggle }) {
           {exercises.map(ex => (
             <div key={ex.id} className="exitem">
               <div className="eximg">
-                {ex.image_url ? <img src={ex.image_url} alt={ex.name} /> : <span style={{fontSize:24,opacity:0.3}}>🏋️</span>}
+                <ExerciseIcon category={ex.image_url} size={32} />
               </div>
               <div className="exinfo">
                 <div className="exname">{ex.name}</div>

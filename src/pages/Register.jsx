@@ -44,6 +44,20 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
+      // Plan Pro → redirigir a Stripe Checkout
+      if (plan === 'pro') {
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymData, accData }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error al iniciar el pago')
+        window.location.href = data.url // redirige a Stripe
+        return
+      }
+
+      // Plan Free → crear directo en Supabase
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: accData.email,
         password: accData.pass,
@@ -70,10 +84,10 @@ export default function Register() {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id:       userId,
+          id:        userId,
           full_name: accData.name,
-          role:     'admin',
-          gym_id:   gymRow.id
+          role:      'admin',
+          gym_id:    gymRow.id
         })
       if (profileError) throw profileError
 

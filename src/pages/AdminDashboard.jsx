@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
          AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType } from 'docx'
 import { saveAs } from 'file-saver'
+import { EXERCISE_CATEGORIES, ExerciseIcon } from '../lib/exerciseIcons'
 import '../styles/admin.css'
 
 export default function AdminDashboard() {
@@ -679,7 +680,17 @@ function RoutineModal({ routine, onSave, onClose }) {
                       <input className="fi fi-sm" placeholder="Peso (ej: 60 kg)" value={ex.weight||''} onChange={e=>updateExercise(idx,'weight',e.target.value)} />
                     </div>
                     <input className="fi" placeholder="Descripción / técnica del ejercicio" value={ex.description||''} onChange={e=>updateExercise(idx,'description',e.target.value)} />
-                    <input className="fi" placeholder="URL de imagen (opcional, ej: https://...)" value={ex.image_url||''} onChange={e=>updateExercise(idx,'image_url',e.target.value)} />
+                    <div className="exercise-icon-row">
+                      <div className="exercise-icon-preview">
+                        <ExerciseIcon category={ex.image_url} size={28} />
+                      </div>
+                      <select className="fi fi-sm" value={ex.image_url||''} onChange={e=>updateExercise(idx,'image_url',e.target.value)}>
+                        <option value="">Sin categoría / ícono genérico</option>
+                        {EXERCISE_CATEGORIES.map(c => (
+                          <option key={c.code} value={c.code}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 ))}
               </div>

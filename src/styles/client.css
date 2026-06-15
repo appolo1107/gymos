@@ -82,6 +82,7 @@
   flex-shrink: 0; overflow: hidden;
 }
 .eximg img { width: 100%; height: 100%; object-fit: cover; }
+.eximg { color: var(--g); }
 .exinfo { flex: 1; }
 .exname { font-size: 13px; font-weight: 500; color: var(--t); margin-bottom: 3px; }
 .exspecs { display: flex; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }

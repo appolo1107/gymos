@@ -1,11 +1,12 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
-import Landing         from './pages/Landing'
-import Login          from './pages/Login'
-import Register       from './pages/Register'
-import AdminDashboard from './pages/AdminDashboard'
-import ClientDashboard from './pages/ClientDashboard'
+import Landing          from './pages/Landing'
+import Login            from './pages/Login'
+import Register         from './pages/Register'
+import RegistroExitoso  from './pages/RegistroExitoso'
+import AdminDashboard   from './pages/AdminDashboard'
+import ClientDashboard  from './pages/ClientDashboard'
 import './styles/global.css'
 
 function HomeRoute() {
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
           <Route path="/admin"    element={<PrivateRoute requiredRole="admin"><AdminDashboard /></PrivateRoute>} />
           <Route path="/cliente"  element={<PrivateRoute requiredRole="client"><ClientDashboard /></PrivateRoute>} />
+          <Route path="/registro-exitoso" element={<RegistroExitoso />} />
           <Route path="*"         element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
