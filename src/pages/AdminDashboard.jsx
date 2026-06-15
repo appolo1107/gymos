@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [gymLogoUrl, setGymLogoUrl] = useState(profile?.gyms?.logo_url || null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [viewingActivity, setViewingActivity] = useState(null)
+  const [clientSearch, setClientSearch] = useState('')
 
   const gymId = profile?.gym_id
 
@@ -30,8 +31,15 @@ export default function AdminDashboard() {
   }, [gymId])
 
   useEffect(() => {
-    if (profile?.gyms?.logo_url) setGymLogoUrl(profile.gyms.logo_url)
-  }, [profile])
+    setGymLogoUrl(profile?.gyms?.logo_url || null)
+  }, [profile?.gyms?.logo_url])
+
+  async function removeLogo() {
+    if (!gymId) return
+    if (!window.confirm('¿Quitar el logo de tu gimnasio?')) return
+    await supabase.from('gyms').update({ logo_url: null }).eq('id', gymId)
+    setGymLogoUrl(null)
+  }
 
   async function handleLogoUpload(e) {
     const file = e.target.files?.[0]
@@ -161,8 +169,19 @@ export default function AdminDashboard() {
     fetchClients()
   }
 
-  const activeClients  = clients.filter(c => c.membership_status === 'active').length
-  const overdueClients = clients.filter(c => c.membership_status === 'overdue').length
+  const activeClients  = clients.filter(c => getEffectiveStatus(c) === 'active').length
+  const overdueClients = clients.filter(c => getEffectiveStatus(c) === 'overdue').length
+
+  function getEffectiveStatus(c) {
+    // Si tiene fecha de vencimiento y ya pasó, es "overdue" visualmente
+    // aunque el campo membership_status diga "active"
+    if (c.membership_status === 'overdue') return 'overdue'
+    if (c.membership_expires) {
+      const today = new Date().toISOString().slice(0, 10)
+      if (c.membership_expires < today) return 'overdue'
+    }
+    return c.membership_status || 'active'
+  }
 
   return (
     <div className="admin-shell">
@@ -215,6 +234,9 @@ export default function AdminDashboard() {
               <input type="file" accept="image/*" onChange={handleLogoUpload} hidden disabled={uploadingLogo} />
               {uploadingLogo && <span className="gym-logo-uploading">...</span>}
             </label>
+            {gymLogoUrl && (
+              <button className="logo-remove-btn" title="Quitar logo" onClick={removeLogo}>✕</button>
+            )}
           </div>
         </div>
 
@@ -272,57 +294,89 @@ export default function AdminDashboard() {
                     + Agregar cliente
                   </button>
                 </div>
-                {clients.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">👤</div>
-                    <div className="empty-title">Sin clientes aún</div>
-                    <div className="empty-sub">Agregá el primero con el botón de arriba</div>
-                  </div>
-                ) : (
-                  <div className="clients-table">
-                    <div className="table-head">
-                      <div>Cliente</div><div>Membresía</div><div>Rutina</div><div>Código acceso</div><div>Acciones</div>
-                    </div>
-                    {clients.map(c => (
-                      <div key={c.id} className="table-row table-row-5">
-                        <div className="client-name-cell">
-                          <div className="av">{c.full_name?.charAt(0).toUpperCase() || '?'}</div>
+                {clients.length > 0 && (
+                  <input
+                    className="fi client-search"
+                    placeholder="🔍 Buscar cliente por nombre o email..."
+                    value={clientSearch}
+                    onChange={e => setClientSearch(e.target.value)}
+                  />
+                )}
+                {(() => {
+                  const filteredClients = clients.filter(c => {
+                    const q = clientSearch.toLowerCase().trim()
+                    if (!q) return true
+                    return c.full_name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
+                  })
+                  if (clients.length === 0) {
+                    return (
+                      <div className="empty-state">
+                        <div className="empty-icon">👤</div>
+                        <div className="empty-title">Sin clientes aún</div>
+                        <div className="empty-sub">Agregá el primero con el botón de arriba</div>
+                      </div>
+                    )
+                  }
+                  if (filteredClients.length === 0) {
+                    return (
+                      <div className="empty-state">
+                        <div className="empty-icon">🔍</div>
+                        <div className="empty-title">Sin resultados</div>
+                        <div className="empty-sub">No encontramos clientes que coincidan con "{clientSearch}"</div>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="clients-table">
+                      <div className="table-head">
+                        <div>Cliente</div><div>Membresía</div><div>Rutina</div><div>Código acceso</div><div>Acciones</div>
+                      </div>
+                      {filteredClients.map(c => (
+                        <div key={c.id} className="table-row table-row-5">
+                          <div className="client-name-cell">
+                            <div className="av">{c.full_name?.charAt(0).toUpperCase() || '?'}</div>
+                            <div>
+                              <div>{c.full_name}</div>
+                              {c.email && <div style={{fontSize:11,color:'var(--t2)'}}>{c.email}</div>}
+                            </div>
+                          </div>
                           <div>
-                            <div>{c.full_name}</div>
-                            {c.email && <div style={{fontSize:11,color:'var(--t2)'}}>{c.email}</div>}
+                            <span className="cell-label">Membresía</span>
+                            {(() => {
+                              const status = getEffectiveStatus(c)
+                              return (
+                                <span className={`badge ${
+                                  status === 'active' ? 'badge-active' :
+                                  status === 'overdue' ? 'badge-overdue' : 'badge-pending'
+                                }`}>
+                                  {status === 'active' ? '✓ Activa' :
+                                   status === 'overdue' ? '⚠ Vencida' : '⏳ Pendiente'}
+                                </span>
+                              )
+                            })()}
+                          </div>
+                          <div className="muted">
+                            <span className="cell-label">Rutina</span>
+                            {routines.find(r => r.id === c.routine_id)?.name || 'Sin rutina'}
+                          </div>
+                          <div>
+                            <span className="cell-label">Código acceso</span>
+                            {c.auth_user_id ? (
+                              <span className="badge badge-active">✓ Vinculado</span>
+                            ) : (
+                              <code className="invite-code" title="El cliente usa este código para registrarse">{c.invite_code || '—'}</code>
+                            )}
+                          </div>
+                          <div style={{display:'flex',gap:6}}>
+                            <button className="ibtn" onClick={() => setViewingActivity(c)}>📊 Actividad</button>
+                            <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
+                            <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
                           </div>
                         </div>
-                        <div>
-                          <span className="cell-label">Membresía</span>
-                          <span className={`badge ${
-                            c.membership_status === 'active' ? 'badge-active' :
-                            c.membership_status === 'overdue' ? 'badge-overdue' : 'badge-pending'
-                          }`}>
-                            {c.membership_status === 'active' ? '✓ Activa' :
-                             c.membership_status === 'overdue' ? '⚠ Vencida' : '⏳ Pendiente'}
-                          </span>
-                        </div>
-                        <div className="muted">
-                          <span className="cell-label">Rutina</span>
-                          {routines.find(r => r.id === c.routine_id)?.name || 'Sin rutina'}
-                        </div>
-                        <div>
-                          <span className="cell-label">Código acceso</span>
-                          {c.auth_user_id ? (
-                            <span className="badge badge-active">✓ Vinculado</span>
-                          ) : (
-                            <code className="invite-code" title="El cliente usa este código para registrarse">{c.invite_code || '—'}</code>
-                          )}
-                        </div>
-                        <div style={{display:'flex',gap:6}}>
-                          <button className="ibtn" onClick={() => setViewingActivity(c)}>📊 Actividad</button>
-                          <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
-                          <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
@@ -482,7 +536,7 @@ function ClientModal({ client, onSave, onClose }) {
     e.preventDefault()
     if (!form.full_name) return
     setSaving(true)
-    await onSave(form)
+    await onSave({ ...form, membership_expires: form.membership_expires || null })
     setSaving(false)
   }
 

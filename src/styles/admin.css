@@ -117,6 +117,12 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; color: var(--g);
 }
+.logo-remove-btn {
+  background: transparent; border: 0.5px solid var(--b2);
+  color: var(--t2); border-radius: 6px; width: 22px; height: 22px;
+  font-size: 11px; cursor: pointer; transition: all 0.15s;
+}
+.logo-remove-btn:hover { border-color: var(--r); color: var(--r); }
 .tab-content { padding: 20px 24px; overflow-y: auto; }
 
 /* STATS */
@@ -138,6 +144,11 @@
 
 /* TABLE */
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.client-search {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 9px 12px;
+}
 .section-title  { font-size: 14px; font-weight: 500; color: var(--t); }
 .clients-table  { background: var(--bg1); border: 0.5px solid var(--b); border-radius: 12px; overflow: hidden; }
 .table-head {
