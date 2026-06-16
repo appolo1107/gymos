@@ -280,7 +280,8 @@ export default function Register() {
             <div className={`plan-card ${plan==='pro'?'sel':''}`} onClick={()=>setPlan('pro')}>
               <div className="plan-badge">⭐ Popular</div>
               <div className="plan-name">Plan Pro</div>
-              <div className="plan-price">$5 <span>/ mes</span></div>
+              <div className="plan-price">$1.500 <span>/ primer mes</span></div>
+              <div className="plan-sub-price" style={{fontSize:12,color:'#888',marginBottom:6}}>Luego $7.500 / mes</div>
               <div className="plan-feats">✓ Clientes ilimitados<br/>✓ Rutinas ilimitadas<br/>✓ Medidas corporales<br/>✓ Estadísticas avanzadas<br/>✓ Soporte prioritario</div>
               <div className={`plan-check ${plan==='pro'?'sel':''}`}>{plan==='pro'?'✓':''}</div>
             </div>
