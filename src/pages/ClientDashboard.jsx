@@ -155,6 +155,7 @@ export default function ClientDashboard() {
         <div className="ctabs">
           <button className={`ctab ${tab==='routine'?'on':''}`} onClick={()=>setTab('routine')}>Rutina</button>
           <button className={`ctab ${tab==='measures'?'on':''}`} onClick={()=>setTab('measures')}>Medidas corporales</button>
+          <button className={`ctab ${tab==='config'?'on':''}`} onClick={()=>setTab('config')}>⚙️ Cuenta</button>
         </div>
 
         {loading ? (
@@ -170,8 +171,15 @@ export default function ClientDashboard() {
             completions={completions}
             onToggle={toggleExercise}
           />
-        ) : (
+        ) : tab === 'measures' ? (
           <MeasuresView measures={measures} onSave={saveMeasures} />
+        ) : (
+          <div style={{padding:'20px 0'}}>
+            <div className="stat-card" style={{maxWidth:420, padding:'20px 24px'}}>
+              <div style={{marginBottom:14, fontSize:15, fontWeight:600}}>🔒 Cambiar contraseña</div>
+              <ClientChangePasswordForm />
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -334,5 +342,51 @@ function MeasuresView({ measures, onSave }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── CHANGE PASSWORD FORM (cliente) ───────────────────────────────────
+function ClientChangePasswordForm() {
+  const [pass, setPass]       = useState('')
+  const [pass2, setPass2]     = useState('')
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg]         = useState('')
+  const [error, setError]     = useState('')
+
+  async function handleChange(e) {
+    e.preventDefault()
+    setMsg(''); setError('')
+    if (!pass || !pass2) { setError('Completá ambos campos'); return }
+    if (pass !== pass2)  { setError('Las contraseñas no coinciden'); return }
+    if (pass.length < 8) { setError('Mínimo 8 caracteres'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pass })
+      if (error) throw error
+      setMsg('✅ Contraseña actualizada correctamente')
+      setPass(''); setPass2('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleChange}>
+      {error && <div className="auth-error" style={{marginBottom:10}}>{error}</div>}
+      {msg   && <div style={{color:'#22c55e', marginBottom:10, fontSize:13}}>{msg}</div>}
+      <div className="ff">
+        <label className="fl">Nueva contraseña</label>
+        <input className="fi" type="password" placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} />
+      </div>
+      <div className="ff">
+        <label className="fl">Confirmar contraseña</label>
+        <input className="fi" type="password" placeholder="••••••••" value={pass2} onChange={e=>setPass2(e.target.value)} />
+      </div>
+      <button className="gbtn" type="submit" disabled={loading} style={{width:'100%', justifyContent:'center', marginTop:4}}>
+        {loading ? 'Guardando...' : 'Cambiar contraseña'}
+      </button>
+    </form>
   )
 }
