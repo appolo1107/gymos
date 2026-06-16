@@ -264,6 +264,7 @@ export default function AdminDashboard() {
             { id:'clients',  icon:'👥', label:'Clientes' },
             { id:'routines', icon:'📋', label:'Rutinas' },
             { id:'assign',   icon:'✅', label:'Asignar rutinas' },
+            { id:'config',   icon:'⚙️', label:'Configuración' },
           ].map(item => (
             <button
               key={item.id}
@@ -286,6 +287,7 @@ export default function AdminDashboard() {
             {tab === 'clients'  && 'Clientes'}
             {tab === 'routines' && 'Rutinas'}
             {tab === 'assign'   && 'Asignar rutinas'}
+            {tab === 'config'   && 'Configuración'}
           </div>
           <div className="topbar-right">
             {subStatus === 'authorized' ? (
@@ -345,8 +347,8 @@ export default function AdminDashboard() {
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">Tu plan</div>
-                    <div className="stat-value green">$1</div>
-                    <div className="stat-sub muted">por mes</div>
+                    <div className="stat-value green">{isPro ? 'Pro' : 'Free'}</div>
+                    <div className="stat-sub muted">{isPro ? '$7.500 / mes' : 'Hasta 3 clientes'}</div>
                   </div>
                 </div>
 
@@ -535,6 +537,17 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {tab === 'config' && (
+              <div className="tab-content">
+                <h3 className="section-title" style={{marginBottom:20}}>Configuración de cuenta</h3>
+
+                {/* Cambiar contraseña */}
+                <div className="stat-card" style={{maxWidth:420, padding:'20px 24px'}}>
+                  <div className="stat-label" style={{marginBottom:14, fontSize:15, fontWeight:600}}>🔒 Cambiar contraseña</div>
+                  <ChangePasswordForm />
+                </div>
               </div>
             )}
           </>
@@ -1028,5 +1041,51 @@ function ActivityModal({ client, routines, onClose }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── CHANGE PASSWORD FORM ─────────────────────────────────────────────
+function ChangePasswordForm() {
+  const [pass, setPass]       = useState('')
+  const [pass2, setPass2]     = useState('')
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg]         = useState('')
+  const [error, setError]     = useState('')
+
+  async function handleChange(e) {
+    e.preventDefault()
+    setMsg(''); setError('')
+    if (!pass || !pass2) { setError('Completá ambos campos'); return }
+    if (pass !== pass2)  { setError('Las contraseñas no coinciden'); return }
+    if (pass.length < 8) { setError('Mínimo 8 caracteres'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pass })
+      if (error) throw error
+      setMsg('✅ Contraseña actualizada correctamente')
+      setPass(''); setPass2('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleChange}>
+      {error && <div className="auth-error" style={{marginBottom:10}}>{error}</div>}
+      {msg   && <div style={{color:'#22c55e', marginBottom:10, fontSize:13}}>{msg}</div>}
+      <div className="ff">
+        <label className="fl">Nueva contraseña</label>
+        <input className="fi" type="password" placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} />
+      </div>
+      <div className="ff">
+        <label className="fl">Confirmar contraseña</label>
+        <input className="fi" type="password" placeholder="••••••••" value={pass2} onChange={e=>setPass2(e.target.value)} />
+      </div>
+      <button className="gbtn" type="submit" disabled={loading} style={{width:'100%', justifyContent:'center', marginTop:4}}>
+        {loading ? 'Guardando...' : 'Cambiar contraseña'}
+      </button>
+    </form>
   )
 }
