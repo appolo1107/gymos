@@ -45,24 +45,27 @@ export default function AdminDashboard() {
     setSubStatus(profile?.gyms?.mp_subscription_status || 'none')
   }, [profile?.gyms?.mp_subscription_status])
 
-  // Al cargar el panel, verificar si hay un pago aprobado en MP
+  // Limpiar parámetros de URL al cargar
   useEffect(() => {
-    if (!gymId) return
     if (window.location.search) window.history.replaceState({}, '', '/admin')
-    if (subStatus === 'authorized') return
-    checkPayment()
-  }, [gymId])
+  }, [])
 
   async function checkPayment() {
+    setSubLoading(true)
     try {
-      const { data } = await supabase.functions.invoke('mercadopago', {
+      const { data, error } = await supabase.functions.invoke('mercadopago', {
         body: { action: 'check_payment', gym_id: gymId }
       })
+      if (error) throw error
       if (data?.paid && data?.status) {
         setSubStatus(data.status)
+      } else {
+        alert('No encontramos un pago aprobado todavía. Si ya pagaste, esperá unos minutos y volvé a intentar.')
       }
     } catch (err) {
-      // silencioso
+      alert('Error al verificar el pago: ' + err.message)
+    } finally {
+      setSubLoading(false)
     }
   }
 
@@ -283,11 +286,17 @@ export default function AdminDashboard() {
             {subStatus === 'authorized' ? (
               <span className="admin-badge">✓ Suscripción activa</span>
             ) : subLoading ? (
-              <span className="admin-badge" style={{background:'#f59e0b'}}>⏳ Procesando...</span>
+              <span className="admin-badge" style={{background:'#f59e0b'}}>⏳ Verificando...</span>
             ) : (
-              <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
-                💳 Activar membresía — $1 primer mes, luego $5/mes
-              </button>
+              <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
+                  💳 Activar membresía
+                </button>
+                <button className="gbtn" onClick={checkPayment} disabled={subLoading}
+                  style={{background:'transparent', border:'1px solid #666', color:'#ccc', fontSize:12, padding:'6px 12px'}}>
+                  ✓ Ya pagué
+                </button>
+              </div>
             )}
             <label className="gym-logo-upload" title="Subir/cambiar logo de tu gimnasio">
               {gymLogoUrl ? (
