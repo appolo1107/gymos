@@ -39,6 +39,8 @@ export default function AdminDashboard() {
   }, [profile?.gyms?.logo_url])
 
   const [subStatus, setSubStatus] = useState(profile?.gyms?.mp_subscription_status || 'none')
+  const isPro = profile?.gyms?.plan === 'pro'
+  const CLIENT_LIMIT = 3
   const [subLoading, setSubLoading] = useState(false)
 
   useEffect(() => {
@@ -151,6 +153,10 @@ export default function AdminDashboard() {
     if (editingClient) {
       await supabase.from('clients').update(formData).eq('id', editingClient.id)
     } else {
+      if (!isPro && clients.length >= CLIENT_LIMIT) {
+        alert(`El plan gratuito permite hasta ${CLIENT_LIMIT} clientes. Activá el Plan Pro para agregar más.`)
+        return
+      }
       await supabase.from('clients').insert({ ...formData, gym_id: gymId })
     }
     setShowClientModal(false)
@@ -362,9 +368,18 @@ export default function AdminDashboard() {
               <div className="tab-content">
                 <div className="section-header">
                   <h3 className="section-title">Todos los clientes</h3>
-                  <button className="gbtn" style={{fontSize:13,padding:'7px 14px'}} onClick={() => { setEditingClient(null); setShowClientModal(true) }}>
-                    + Agregar cliente
-                  </button>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    {!isPro && (
+                      <span style={{fontSize:12, color: clients.length >= CLIENT_LIMIT ? '#ef4444' : '#888'}}>
+                        {clients.length}/{CLIENT_LIMIT} clientes
+                      </span>
+                    )}
+                    <button className="gbtn" style={{fontSize:13,padding:'7px 14px'}}
+                      onClick={() => { setEditingClient(null); setShowClientModal(true) }}
+                      disabled={!isPro && clients.length >= CLIENT_LIMIT}>
+                      + Agregar cliente
+                    </button>
+                  </div>
                 </div>
                 {clients.length > 0 && (
                   <input
