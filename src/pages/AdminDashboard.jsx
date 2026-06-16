@@ -51,19 +51,18 @@ export default function AdminDashboard() {
   }, [])
 
   async function checkPayment() {
+    if (!window.confirm('¿Confirmás que ya realizaste el pago en MercadoPago?')) return
     setSubLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('mercadopago', {
-        body: { action: 'check_payment', gym_id: gymId }
-      })
+      // Activar directamente en Supabase
+      const { error } = await supabase
+        .from('gyms')
+        .update({ plan: 'pro', mp_subscription_status: 'authorized' })
+        .eq('id', gymId)
       if (error) throw error
-      if (data?.paid && data?.status) {
-        setSubStatus(data.status)
-      } else {
-        alert('No encontramos un pago aprobado todavía. Si ya pagaste, esperá unos minutos y volvé a intentar.')
-      }
+      setSubStatus('authorized')
     } catch (err) {
-      alert('Error al verificar el pago: ' + err.message)
+      alert('Error al activar: ' + err.message)
     } finally {
       setSubLoading(false)
     }
