@@ -14,6 +14,8 @@ export default function ClientDashboard() {
   const [measures, setMeasures] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedWeek, setSelectedWeek] = useState(1)
+  const [expiryAlert, setExpiryAlert] = useState(null) // null | { daysLeft, message }
+  const [showAlert, setShowAlert] = useState(false)
 
   const clientRecordId = profile?.client_record_id
   const routineId = profile?.routine_id
@@ -22,6 +24,15 @@ export default function ClientDashboard() {
     if (!clientRecordId) { setLoading(false); return }
     loadAll()
   }, [clientRecordId])
+
+  // Mostrar alerta cada 30 minutos si hay vencimiento próximo
+  useEffect(() => {
+    if (!expiryAlert) return
+    const interval = setInterval(() => {
+      setShowAlert(true)
+    }, 30 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [expiryAlert])
 
   async function loadAll() {
     setLoading(true)
@@ -32,6 +43,24 @@ export default function ClientDashboard() {
       .select('*')
       .eq('id', clientRecordId)
       .single()
+
+    // Verificar vencimiento
+    if (clientData?.expiry_date) {
+      const today = new Date()
+      today.setHours(0,0,0,0)
+      const expiry = new Date(clientData.expiry_date)
+      expiry.setHours(0,0,0,0)
+      const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24))
+      if (daysLeft <= 3) {
+        const msg = daysLeft <= 0
+          ? '⚠️ Tu membresía está vencida. Hablá con tu encargado.'
+          : daysLeft === 1
+          ? '⚠️ Tu membresía vence mañana. Hablá con tu encargado.'
+          : `⚠️ Tu membresía vence en ${daysLeft} días. Hablá con tu encargado.`
+        setExpiryAlert({ daysLeft, message: msg })
+        setShowAlert(true)
+      }
+    }
 
     if (clientData?.routine_id) {
       const { data: routineData } = await supabase
@@ -134,6 +163,26 @@ export default function ClientDashboard() {
         )}
         <button className="signout-btn-light" onClick={signOut}>← Cerrar sesión</button>
       </nav>
+
+      {/* ALERTA VENCIMIENTO */}
+      {showAlert && expiryAlert && (
+        <div style={{
+          position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999, width: 'calc(100% - 32px)', maxWidth: 420,
+          background: expiryAlert.daysLeft <= 0 ? '#7f1d1d' : '#78350f',
+          border: `1px solid ${expiryAlert.daysLeft <= 0 ? '#ef4444' : '#f59e0b'}`,
+          borderRadius: 14, padding: '14px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          animation: 'slideDown 0.3s ease'
+        }}>
+          <span style={{fontSize: 13, color: '#fff', lineHeight: 1.4}}>{expiryAlert.message}</span>
+          <button onClick={() => setShowAlert(false)} style={{
+            background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8,
+            color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap'
+          }}>Cerrar</button>
+        </div>
+      )}
 
       <div className="client-content">
         <div className="chdr">
