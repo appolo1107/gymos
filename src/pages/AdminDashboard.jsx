@@ -225,6 +225,46 @@ export default function AdminDashboard() {
     fetchClients()
   }
 
+  async function duplicateRoutine(routine) {
+    if (!window.confirm(`¿Duplicar la rutina "${routine.name}"?`)) return
+    // Crear copia de la rutina
+    const { data: newRoutine, error } = await supabase
+      .from('routines')
+      .insert({
+        name: `${routine.name} (copia)`,
+        description: routine.description,
+        days_per_week: routine.days_per_week,
+        duration_months: routine.duration_months,
+        gym_id: gymId,
+      })
+      .select()
+      .single()
+    if (error) { alert('Error al duplicar'); return }
+
+    // Copiar ejercicios
+    const { data: exercises } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('routine_id', routine.id)
+    
+    if (exercises?.length > 0) {
+      await supabase.from('exercises').insert(
+        exercises.map(ex => ({
+          routine_id: newRoutine.id,
+          name: ex.name,
+          day_label: ex.day_label,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight: ex.weight,
+          description: ex.description,
+          image_url: ex.image_url,
+          order_index: ex.order_index,
+        }))
+      )
+    }
+    fetchRoutines()
+  }
+
   async function assignRoutine(clientId, routineId) {
     await supabase
       .from('clients')
@@ -497,6 +537,7 @@ export default function AdminDashboard() {
                         </div>
                         <div style={{display:'flex',gap:6}}>
                           <button className="ibtn" onClick={() => { setEditingRoutine(r); setShowRoutineModal(true) }}>✏️ Editar</button>
+                          <button className="ibtn" onClick={() => duplicateRoutine(r)}>📋 Duplicar</button>
                           <button className="ibtn" onClick={() => deleteRoutine(r.id)}>🗑️</button>
                         </div>
                       </div>
@@ -673,6 +714,45 @@ function ClientModal({ client, onSave, onClose }) {
   )
 }
 
+const PLANTILLAS = [
+  {
+    label: '💪 Fuerza — Tren superior',
+    form: { name: 'Fuerza — Tren superior', description: 'Pecho, hombros y tríceps', days_per_week: 3, duration_months: 1 },
+    exercises: [
+      { day_label: 'Semana 1 - Lunes', name: 'Press de banca', sets: '4', reps: '10', weight: '60 kg', description: 'Agarre medio, bajar controlado', image_url: 'chest' },
+      { day_label: 'Semana 1 - Lunes', name: 'Press militar', sets: '3', reps: '12', weight: '40 kg', description: 'De pie o sentado', image_url: 'shoulders' },
+      { day_label: 'Semana 1 - Lunes', name: 'Extensiones de tríceps', sets: '3', reps: '15', weight: '20 kg', description: 'En polea alta', image_url: 'arms' },
+      { day_label: 'Semana 1 - Miércoles', name: 'Press inclinado', sets: '4', reps: '10', weight: '50 kg', description: '45 grados', image_url: 'chest' },
+      { day_label: 'Semana 1 - Miércoles', name: 'Elevaciones laterales', sets: '3', reps: '15', weight: '10 kg', description: 'Codos ligeramente flexionados', image_url: 'shoulders' },
+      { day_label: 'Semana 1 - Viernes', name: 'Fondos en paralelas', sets: '3', reps: '12', weight: 'Peso corporal', description: 'Torso erguido', image_url: 'chest' },
+    ]
+  },
+  {
+    label: '🦵 Fuerza — Tren inferior',
+    form: { name: 'Fuerza — Tren inferior', description: 'Cuádriceps, glúteos e isquiotibiales', days_per_week: 3, duration_months: 1 },
+    exercises: [
+      { day_label: 'Semana 1 - Lunes', name: 'Sentadilla', sets: '4', reps: '10', weight: '80 kg', description: 'Espalda recta, rodillas hacia afuera', image_url: 'legs' },
+      { day_label: 'Semana 1 - Lunes', name: 'Prensa', sets: '3', reps: '12', weight: '120 kg', description: 'Pies separados al ancho de hombros', image_url: 'legs' },
+      { day_label: 'Semana 1 - Miércoles', name: 'Peso muerto', sets: '4', reps: '8', weight: '90 kg', description: 'Espalda neutral', image_url: 'back' },
+      { day_label: 'Semana 1 - Miércoles', name: 'Extensiones de cuádriceps', sets: '3', reps: '15', weight: '50 kg', description: 'En máquina', image_url: 'legs' },
+      { day_label: 'Semana 1 - Viernes', name: 'Estocadas', sets: '3', reps: '12', weight: '20 kg', description: 'Cada pierna', image_url: 'legs' },
+      { day_label: 'Semana 1 - Viernes', name: 'Curl femoral', sets: '3', reps: '12', weight: '40 kg', description: 'En máquina acostado', image_url: 'legs' },
+    ]
+  },
+  {
+    label: '🔥 Full body — Principiantes',
+    form: { name: 'Full Body — Principiantes', description: 'Rutina completa para comenzar', days_per_week: 3, duration_months: 1 },
+    exercises: [
+      { day_label: 'Semana 1 - Lunes', name: 'Sentadilla con peso corporal', sets: '3', reps: '15', weight: 'Sin peso', description: 'Aprender la técnica', image_url: 'legs' },
+      { day_label: 'Semana 1 - Lunes', name: 'Flexiones', sets: '3', reps: '10', weight: 'Peso corporal', description: 'Modificar según nivel', image_url: 'chest' },
+      { day_label: 'Semana 1 - Lunes', name: 'Remo con mancuerna', sets: '3', reps: '12', weight: '10 kg', description: 'Cada brazo', image_url: 'back' },
+      { day_label: 'Semana 1 - Miércoles', name: 'Peso muerto rumano', sets: '3', reps: '12', weight: '30 kg', description: 'Piernas casi extendidas', image_url: 'back' },
+      { day_label: 'Semana 1 - Miércoles', name: 'Press con mancuernas', sets: '3', reps: '12', weight: '15 kg', description: 'En banco plano', image_url: 'chest' },
+      { day_label: 'Semana 1 - Viernes', name: 'Plancha', sets: '3', reps: '30 seg', weight: 'Peso corporal', description: 'Cuerpo alineado', image_url: 'core' },
+    ]
+  },
+]
+
 function RoutineModal({ routine, onSave, onClose }) {
   const [form, setForm] = useState({
     name: routine?.name || '',
@@ -733,6 +813,19 @@ function RoutineModal({ routine, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box modal-box-lg" onClick={e => e.stopPropagation()}>
         <p className="modal-title">{routine ? '✏️ Editar rutina' : '+ Nueva rutina'}</p>
+        {!routine && (
+          <div style={{marginBottom:16}}>
+            <label className="fl" style={{marginBottom:6, display:'block'}}>⚡ Usar plantilla (opcional)</label>
+            <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+              {PLANTILLAS.map((p, i) => (
+                <button key={i} type="button" className="ibtn" style={{fontSize:12}}
+                  onClick={() => { setForm(p.form); setExercises(p.exercises) }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="ff"><label className="fl">Nombre de la rutina *</label>
             <input className="fi" value={form.name} onChange={e=>update('name', e.target.value)} placeholder="Fuerza A — Tren superior" required /></div>
