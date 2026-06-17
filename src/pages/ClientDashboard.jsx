@@ -48,7 +48,7 @@ export default function ClientDashboard() {
     if (clientData?.membership_expires) {
       const today = new Date()
       today.setHours(0,0,0,0)
-      const expiry = new Date(clientData.expiry_date)
+      const expiry = new Date(clientData.membership_expires)
       expiry.setHours(0,0,0,0)
       const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24))
       if (daysLeft <= 3) {
