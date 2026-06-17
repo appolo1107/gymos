@@ -45,7 +45,7 @@ export default function ClientDashboard() {
       .single()
 
     // Verificar vencimiento
-    if (clientData?.expiry_date) {
+    if (clientData?.membership_expires) {
       const today = new Date()
       today.setHours(0,0,0,0)
       const expiry = new Date(clientData.expiry_date)
