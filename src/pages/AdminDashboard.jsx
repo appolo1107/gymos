@@ -22,6 +22,25 @@ export default function AdminDashboard() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [viewingActivity, setViewingActivity] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
+  const [gymColor, setGymColor] = useState(profile?.gyms?.theme_color || '#8b5cf6')
+
+  useEffect(() => {
+    setGymColor(profile?.gyms?.theme_color || '#8b5cf6')
+  }, [profile?.gyms?.theme_color])
+
+  // Aplicar el color como variable CSS global
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--gym-color', gymColor)
+    root.style.setProperty('--gym-color-soft', gymColor + '1f')
+    root.style.setProperty('--gym-color-border', gymColor + '4d')
+  }, [gymColor])
+
+  async function updateGymColor(hex) {
+    setGymColor(hex)
+    if (!gymId) return
+    await supabase.from('gyms').update({ theme_color: hex }).eq('id', gymId)
+  }
 
   const gymId = profile?.gym_id
 
@@ -602,6 +621,23 @@ export default function AdminDashboard() {
               <div className="tab-content">
                 <h3 className="section-title" style={{marginBottom:20}}>Configuración de cuenta</h3>
 
+                {/* Color del gimnasio */}
+                <div className="stat-card" style={{maxWidth:420, padding:'20px 24px', marginBottom:16}}>
+                  <div className="stat-label" style={{marginBottom:6, fontSize:15, fontWeight:600}}>🎨 Color de tu panel</div>
+                  <p style={{fontSize:12, color:'var(--t2)', marginBottom:4}}>Elegí el color que identifica a tu gimnasio</p>
+                  <div className="color-picker-row">
+                    {GYM_COLORS.map(c => (
+                      <div
+                        key={c.hex}
+                        className={`color-swatch ${gymColor === c.hex ? 'selected' : ''}`}
+                        style={{ background: c.hex }}
+                        onClick={() => updateGymColor(c.hex)}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
                 {/* Cambiar contraseña */}
                 <div className="stat-card" style={{maxWidth:420, padding:'20px 24px'}}>
                   <div className="stat-label" style={{marginBottom:14, fontSize:15, fontWeight:600}}>🔒 Cambiar contraseña</div>
@@ -1169,3 +1205,15 @@ function ChangePasswordForm() {
     </form>
   )
 }
+
+// ── PALETA DE COLORES PARA EL GYM ────────────────────────────────────
+const GYM_COLORS = [
+  { name: 'Violeta',  hex: '#8b5cf6' },
+  { name: 'Cian',     hex: '#22d3ee' },
+  { name: 'Verde',    hex: '#10b981' },
+  { name: 'Naranja',  hex: '#f97316' },
+  { name: 'Rosa',     hex: '#ec4899' },
+  { name: 'Azul',     hex: '#3b82f6' },
+  { name: 'Rojo',     hex: '#ef4444' },
+  { name: 'Dorado',   hex: '#c9a227' },
+]
