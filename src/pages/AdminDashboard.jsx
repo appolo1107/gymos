@@ -265,6 +265,19 @@ export default function AdminDashboard() {
     fetchRoutines()
   }
 
+  async function toggleTemplate(routine) {
+    const templatesCount = routines.filter(r => r.is_template && r.id !== routine.id).length
+    if (!routine.is_template && templatesCount >= 3) {
+      alert('Solo podés tener hasta 3 rutinas destacadas como plantilla.')
+      return
+    }
+    await supabase
+      .from('routines')
+      .update({ is_template: !routine.is_template })
+      .eq('id', routine.id)
+    fetchRoutines()
+  }
+
   async function assignRoutine(clientId, routineId) {
     await supabase
       .from('clients')
@@ -536,6 +549,11 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div style={{display:'flex',gap:6}}>
+                          <button className="ibtn" onClick={() => toggleTemplate(r)}
+                            style={{color: r.is_template ? '#f59e0b' : undefined}}
+                            title={r.is_template ? 'Quitar de plantillas' : 'Marcar como plantilla'}>
+                            {r.is_template ? '⭐' : '☆'}
+                          </button>
                           <button className="ibtn" onClick={() => { setEditingRoutine(r); setShowRoutineModal(true) }}>✏️ Editar</button>
                           <button className="ibtn" onClick={() => duplicateRoutine(r)}>📋 Duplicar</button>
                           <button className="ibtn" onClick={() => deleteRoutine(r.id)}>🗑️</button>
@@ -610,6 +628,7 @@ export default function AdminDashboard() {
           routine={editingRoutine}
           onSave={saveRoutine}
           onClose={() => { setShowRoutineModal(false); setEditingRoutine(null) }}
+          myTemplates={routines.filter(r => r.is_template)}
         />
       )}
 
@@ -753,7 +772,7 @@ const PLANTILLAS = [
   },
 ]
 
-function RoutineModal({ routine, onSave, onClose }) {
+function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
   const [form, setForm] = useState({
     name: routine?.name || '',
     description: routine?.description || '',
@@ -817,8 +836,18 @@ function RoutineModal({ routine, onSave, onClose }) {
           <div style={{marginBottom:16}}>
             <label className="fl" style={{marginBottom:6, display:'block'}}>⚡ Usar plantilla (opcional)</label>
             <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+              {myTemplates.map((r, i) => (
+                <button key={`my-${i}`} type="button" className="ibtn" style={{fontSize:12, borderColor:'#f59e0b', color:'#f59e0b'}}
+                  onClick={async () => {
+                    const { data: exs } = await supabase.from('exercises').select('*').eq('routine_id', r.id).order('order_index')
+                    setForm({ name: r.name, description: r.description, days_per_week: r.days_per_week, duration_months: r.duration_months })
+                    setExercises(exs || [])
+                  }}>
+                  ⭐ {r.name}
+                </button>
+              ))}
               {PLANTILLAS.map((p, i) => (
-                <button key={i} type="button" className="ibtn" style={{fontSize:12}}
+                <button key={`base-${i}`} type="button" className="ibtn" style={{fontSize:12}}
                   onClick={() => { setForm(p.form); setExercises(p.exercises) }}>
                   {p.label}
                 </button>
