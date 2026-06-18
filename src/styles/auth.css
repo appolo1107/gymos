@@ -1,4 +1,5 @@
-/* src/styles/auth.css */
+/* src/styles/auth.css — Aurora Blue */
+
 .auth-shell {
   min-height: 100vh;
   background: transparent;
@@ -8,127 +9,229 @@
   padding: 24px;
 }
 
+/* ── Card principal ── */
 .auth-card {
-  background: var(--bg1);
-  border: 0.5px solid var(--b2);
-  border-radius: 16px;
-  padding: 32px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 24px;
+  padding: 36px 32px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(255,255,255,0.06) inset;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Línea de acento en el top de la card */
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(96,165,250,0.7), rgba(34,211,238,0.5), transparent);
+}
+
+/* ── Logo ── */
 .auth-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
-.auth-logo-img { height: 64px; width: auto; }
+.auth-logo-img { height: 60px; width: auto; }
 
-.auth-title { font-size: 18px; font-weight: 500; color: var(--t); margin-bottom: 6px; text-align: center; }
-.auth-sub   { font-size: 13px; color: var(--t2); text-align: center; margin-bottom: 22px; line-height: 1.5; }
+/* ── Títulos ── */
+.auth-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--t);
+  margin-bottom: 6px;
+  text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.4px;
+}
+.auth-sub {
+  font-size: 13px;
+  color: var(--t2);
+  text-align: center;
+  margin-bottom: 26px;
+  line-height: 1.6;
+}
 
+/* ── Error ── */
 .auth-error {
-  background: #2a0a0a;
-  border: 0.5px solid var(--r);
+  background: rgba(251,113,133,0.08);
+  border: 1px solid rgba(251,113,133,0.25);
   color: var(--r);
   font-size: 13px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 16px;
   text-align: center;
 }
 
+/* ── Campos ── */
 .ff   { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
-.fl   { font-size: 12px; color: var(--t2); }
+.fl   { font-size: 12px; color: var(--t2); font-weight: 500; letter-spacing: 0.1px; }
 .fi-wrap { position: relative; }
-.fi   {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 0.5px solid var(--b2);
-  background: var(--bg2);
-  color: var(--t);
-  font-size: 13px;
-  transition: border-color 0.15s;
+
+/* .fi está definido en global.css — solo sobreescribimos lo necesario */
+.fi {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
 }
-.fi:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 3px rgba(0,230,118,0.08); }
+.fi:focus {
+  border-color: var(--g);
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
+}
+
 .fi-toggle {
-  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
   background: none; border: none; cursor: pointer; font-size: 15px;
+  color: var(--t2);
+  transition: color 0.15s;
 }
+.fi-toggle:hover { color: var(--t); }
 
+/* ── Olvidé contraseña ── */
 .auth-forgot { text-align: right; margin-bottom: 16px; margin-top: -6px; }
-.auth-forgot a { font-size: 12px; color: var(--g); }
+.auth-forgot a { font-size: 12px; color: var(--g); transition: opacity 0.15s; }
+.auth-forgot a:hover { opacity: 0.75; }
 
+/* ── Divisor ── */
 .auth-divider {
-  display: flex; align-items: center; gap: 10px; margin: 18px 0;
+  display: flex; align-items: center; gap: 10px; margin: 20px 0;
 }
 .auth-divider::before, .auth-divider::after {
-  content: ''; flex: 1; height: 0.5px; background: var(--b);
+  content: ''; flex: 1; height: 0.5px;
+  background: rgba(255,255,255,0.08);
 }
 .auth-divider span { font-size: 12px; color: var(--t3); }
 
+/* ── Links ── */
 .auth-link { text-align: center; font-size: 13px; color: var(--t2); }
-.auth-link a { color: var(--g); font-weight: 500; }
+.auth-link a { color: var(--g); font-weight: 600; transition: opacity 0.15s; }
+.auth-link a:hover { opacity: 0.75; }
 
 .back-link {
   background: none; border: none; color: var(--t2);
-  font-size: 12px; cursor: pointer;
+  font-size: 12px; cursor: pointer; transition: color 0.15s;
 }
 .back-link:hover { color: var(--t); }
 
-/* STEPS */
+/* ══════════════════════════════════════════
+   STEPS (Register multi-paso)
+══════════════════════════════════════════ */
 .steps-row {
   display: flex; align-items: center; justify-content: center;
-  gap: 0; margin-bottom: 22px;
+  gap: 0; margin-bottom: 26px;
 }
 .step-dot {
-  width: 28px; height: 28px; border-radius: 50%;
-  border: 0.5px solid var(--b2);
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 500; color: var(--t2);
-  transition: all 0.2s;
+  font-size: 12px; font-weight: 600; color: var(--t2);
+  transition: all 0.25s;
+  font-family: 'Space Grotesk', sans-serif;
 }
-.step-dot.done   { background: var(--g); border-color: var(--g); color: #000; }
-.step-dot.active { border-color: var(--g); color: var(--g); }
-.step-line { width: 24px; height: 0.5px; background: var(--b2); }
+.step-dot.done {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(96,165,250,0.4);
+}
+.step-dot.active {
+  border-color: var(--g);
+  color: var(--g);
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
+}
+.step-line { width: 28px; height: 1px; background: rgba(255,255,255,0.08); }
 .step-line.done { background: var(--g); }
 
-/* ROLE */
+/* ══════════════════════════════════════════
+   ROLE SELECTOR
+══════════════════════════════════════════ */
 .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
 .role-opt {
-  border: 0.5px solid var(--b2); border-radius: 10px; padding: 14px;
-  cursor: pointer; transition: all 0.15s; text-align: center;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
+  background: rgba(255,255,255,0.03);
 }
-.role-opt:hover { border-color: var(--g); background: rgba(0,230,118,0.05); }
-.role-opt.sel   { border-color: var(--g); background: rgba(0,230,118,0.08); }
-.role-icon { font-size: 22px; margin-bottom: 6px; }
-.role-lbl  { font-size: 13px; font-weight: 500; color: var(--t); }
-.role-desc { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.role-opt:hover {
+  border-color: rgba(96,165,250,0.4);
+  background: rgba(96,165,250,0.06);
+}
+.role-opt.sel {
+  border-color: var(--g);
+  background: rgba(96,165,250,0.10);
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.10);
+}
+.role-icon { font-size: 24px; margin-bottom: 7px; }
+.role-lbl  { font-size: 13px; font-weight: 600; color: var(--t); font-family: 'Space Grotesk', sans-serif; }
+.role-desc { font-size: 11px; color: var(--t2); margin-top: 3px; line-height: 1.4; }
 
-/* PLAN */
+/* ══════════════════════════════════════════
+   PLAN CARDS
+══════════════════════════════════════════ */
 .plan-card {
-  border: 0.5px solid var(--b2); border-radius: 10px;
-  padding: 16px; margin-bottom: 12px; cursor: pointer;
-  transition: all 0.15s; position: relative;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  padding: 18px 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  background: rgba(255,255,255,0.03);
 }
-.plan-card:hover { border-color: var(--g); background: rgba(0,230,118,0.04); }
-.plan-card.sel   { border-color: var(--g); background: rgba(0,230,118,0.08); }
-.plan-name  { font-size: 14px; font-weight: 500; color: var(--t); margin-bottom: 2px; }
-.plan-price { font-size: 24px; font-weight: 500; color: var(--g); }
+.plan-card:hover {
+  border-color: rgba(96,165,250,0.4);
+  background: rgba(96,165,250,0.05);
+}
+.plan-card.sel {
+  border-color: var(--g);
+  background: rgba(96,165,250,0.08);
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.10);
+}
+.plan-name  {
+  font-size: 14px; font-weight: 600; color: var(--t);
+  margin-bottom: 4px; font-family: 'Space Grotesk', sans-serif;
+}
+.plan-price {
+  font-size: 26px; font-weight: 700;
+  background: var(--grad);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.5px;
+}
 .plan-price span { font-size: 13px; color: var(--t2); font-weight: 400; }
-.plan-feats { font-size: 12px; color: var(--t2); margin-top: 8px; line-height: 1.7; }
+.plan-feats { font-size: 12px; color: var(--t2); margin-top: 9px; line-height: 1.75; }
+
 .plan-badge {
-  position: absolute; top: 12px; right: 36px;
-  background: var(--g); color: #000;
-  font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px;
+  position: absolute; top: 14px; right: 40px;
+  background: var(--grad);
+  color: #fff;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 9px; border-radius: 20px;
+  font-family: 'Space Grotesk', sans-serif;
 }
 .plan-check {
-  position: absolute; top: 12px; right: 12px;
+  position: absolute; top: 14px; right: 14px;
   width: 20px; height: 20px; border-radius: 50%;
-  border: 0.5px solid var(--b2);
+  border: 1px solid rgba(255,255,255,0.15);
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 500;
+  font-size: 11px; font-weight: 600; color: transparent;
+  transition: all 0.18s;
 }
-.plan-check.sel { background: var(--g); border-color: var(--g); color: #000; }
+.plan-check.sel {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(96,165,250,0.4);
+}
