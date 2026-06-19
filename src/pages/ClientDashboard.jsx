@@ -4,7 +4,6 @@ import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ExerciseIcon } from '../lib/exerciseIcons'
 import '../styles/client.css'
-
 export default function ClientDashboard() {
   const { profile, signOut } = useAuth()
   const [tab, setTab] = useState('routine') // routine | measures
@@ -45,12 +44,19 @@ export default function ClientDashboard() {
       .single()
 
     // Verificar vencimiento
+    console.log('DIAGNÓSTICO VENCIMIENTO →', {
+      clientRecordId,
+      idLeido: clientData?.id,
+      nombreLeido: clientData?.full_name,
+      membership_expires: clientData?.membership_expires,
+    })
     if (clientData?.membership_expires) {
       const today = new Date()
       today.setHours(0,0,0,0)
       const expiry = new Date(clientData.membership_expires)
       expiry.setHours(0,0,0,0)
       const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24))
+      console.log('DIAGNÓSTICO VENCIMIENTO → daysLeft calculado:', daysLeft)
       if (daysLeft <= 3) {
         const msg = daysLeft <= 0
           ? '⚠️ Tu membresía está vencida. Hablá con tu encargado.'
