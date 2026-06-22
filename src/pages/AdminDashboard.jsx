@@ -22,7 +22,6 @@ export default function AdminDashboard() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [viewingActivity, setViewingActivity] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
-  const [clientNotesMap, setClientNotesMap] = useState({}) // routine_id -> count of client_notes
 
   const gymId = profile?.gym_id
 
@@ -30,7 +29,6 @@ export default function AdminDashboard() {
     if (gymId) {
       fetchClients()
       fetchRoutines()
-      fetchClientNotes()
     } else {
       setLoading(false)
     }
@@ -140,23 +138,6 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false })
     if (!error) setClients(data || [])
     setLoading(false)
-  }
-
-  async function fetchClientNotes() {
-    // Traer todos los ejercicios con client_note de las rutinas de este gym
-    const { data } = await supabase
-      .from('exercises')
-      .select('routine_id, client_note')
-      .not('client_note', 'is', null)
-      .neq('client_note', '')
-    if (data) {
-      const map = {}
-      data.forEach(ex => {
-        if (!map[ex.routine_id]) map[ex.routine_id] = 0
-        map[ex.routine_id]++
-      })
-      setClientNotesMap(map)
-    }
   }
 
   async function fetchRoutines() {
@@ -527,29 +508,9 @@ export default function AdminDashboard() {
                       {filteredClients.map(c => (
                         <div key={c.id} className="table-row table-row-5">
                           <div className="client-name-cell">
-                            <div className="av" style={{position:'relative'}}>
-                              {c.full_name?.charAt(0).toUpperCase() || '?'}
-                              {clientNotesMap[c.routine_id] > 0 && (
-                                <span style={{
-                                  position:'absolute', top:-4, right:-4,
-                                  background:'#6366f1', color:'#fff',
-                                  borderRadius:'50%', fontSize:9, fontWeight:700,
-                                  width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center',
-                                  border:'2px solid var(--bg)'
-                                }}>{clientNotesMap[c.routine_id]}</span>
-                              )}
-                            </div>
+                            <div className="av">{c.full_name?.charAt(0).toUpperCase() || '?'}</div>
                             <div>
-                              <div style={{display:'flex', alignItems:'center', gap:6}}>
-                                {c.full_name}
-                                {clientNotesMap[c.routine_id] > 0 && (
-                                  <span style={{
-                                    fontSize:10, fontWeight:700, color:'#818cf8',
-                                    background:'#6366f115', border:'1px solid #6366f144',
-                                    borderRadius:10, padding:'1px 6px'
-                                  }}>💬 {clientNotesMap[c.routine_id]} respuesta{clientNotesMap[c.routine_id] !== 1 ? 's' : ''}</span>
-                                )}
-                              </div>
+                              <div>{c.full_name}</div>
                               {c.email && <div style={{fontSize:11,color:'var(--t2)'}}>{c.email}</div>}
                             </div>
                           </div>
@@ -581,7 +542,11 @@ export default function AdminDashboard() {
                             )}
                           </div>
                           <div style={{display:'flex',gap:6}}>
-                            <button className="ibtn" onClick={() => setViewingActivity(c)}>📊 Actividad</button>
+                            <button className="ibtn" onClick={() => {
+                              setViewingActivity(c)
+                              // Limpiar badge localmente de inmediato
+                              if (c.routine_id) setClientNotesMap(prev => ({ ...prev, [c.routine_id]: 0 }))
+                            }}>📊 Actividad</button>
                             <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
                             <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
                           </div>
@@ -708,7 +673,7 @@ export default function AdminDashboard() {
         <ActivityModal
           client={viewingActivity}
           routines={routines}
-          onClose={() => setViewingActivity(null)}
+          onClose={() => { setViewingActivity(null); fetchClientNotes() }}
         />
       )}
     </div>
@@ -1279,21 +1244,13 @@ function ActivityModal({ client, routines, onClose }) {
                                   </div>
                                 )}
                                 {ex.client_note ? (
-                                  <div style={{
-                                    background:'linear-gradient(135deg, #6366f120, #818cf810)',
-                                    border:'1px solid #6366f166',
-                                    borderLeft:'3px solid #6366f1',
-                                    borderRadius:6, padding:'7px 10px',
-                                    boxShadow:'0 0 8px #6366f122'
-                                  }}>
-                                    <div style={{fontSize:10, color:'#818cf8', fontWeight:700, marginBottom:3, textTransform:'uppercase', letterSpacing:'0.5px'}}>
-                                      💬 Respuesta del cliente
-                                    </div>
-                                    <div style={{fontSize:13, color:'#e0e0e0', lineHeight:1.4}}>{ex.client_note}</div>
+                                  <div style={{background:'#6366f115', border:'1px solid #6366f144', borderRadius:6, padding:'5px 8px'}}>
+                                    <span style={{fontSize:11, color:'#818cf8', fontWeight:600}}>💬 Respuesta del cliente: </span>
+                                    <span style={{fontSize:12, color:'#ccc'}}>{ex.client_note}</span>
                                   </div>
                                 ) : ex.admin_note ? (
-                                  <div style={{background:'#ffffff06', border:'1px dashed #333', borderRadius:6, padding:'4px 8px'}}>
-                                    <span style={{fontSize:11, color:'#444', fontStyle:'italic'}}>Sin respuesta aún</span>
+                                  <div style={{background:'#ffffff08', borderRadius:6, padding:'4px 8px'}}>
+                                    <span style={{fontSize:11, color:'#555', fontStyle:'italic'}}>Sin respuesta aún</span>
                                   </div>
                                 ) : null}
                               </div>
