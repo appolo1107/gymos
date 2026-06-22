@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
-import { ExerciseIcon } from '../lib/exerciseIcons'
+import { ExerciseIcon, EXERCISE_PART_CATEGORIES } from '../lib/exerciseIcons'
 import '../styles/client.css'
+
 export default function ClientDashboard() {
   const { profile, signOut } = useAuth()
   const [tab, setTab] = useState('routine') // routine | measures
@@ -44,19 +45,12 @@ export default function ClientDashboard() {
       .single()
 
     // Verificar vencimiento
-    console.log('DIAGNÓSTICO VENCIMIENTO →', {
-      clientRecordId,
-      idLeido: clientData?.id,
-      nombreLeido: clientData?.full_name,
-      membership_expires: clientData?.membership_expires,
-    })
     if (clientData?.membership_expires) {
       const today = new Date()
       today.setHours(0,0,0,0)
       const expiry = new Date(clientData.membership_expires)
       expiry.setHours(0,0,0,0)
       const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24))
-      console.log('DIAGNÓSTICO VENCIMIENTO → daysLeft calculado:', daysLeft)
       if (daysLeft <= 3) {
         const msg = daysLeft <= 0
           ? '⚠️ Tu membresía está vencida. Hablá con tu encargado.'
@@ -78,10 +72,14 @@ export default function ClientDashboard() {
 
       const { data: exercisesData } = await supabase
         .from('exercises')
-        .select('*')
+        .select('*, exercise_sets(*)')
         .eq('routine_id', clientData.routine_id)
         .order('order_index', { ascending: true })
-      setExercises(exercisesData || [])
+      const withOrderedSets = (exercisesData || []).map(ex => ({
+        ...ex,
+        exercise_sets: (ex.exercise_sets || []).sort((a, b) => a.set_number - b.set_number)
+      }))
+      setExercises(withOrderedSets)
     } else {
       setRoutine(null)
       setExercises([])
@@ -120,6 +118,19 @@ export default function ClientDashboard() {
     }
   }
 
+  async function saveClientNote(exerciseId, text) {
+    const { error } = await supabase
+      .from('exercises')
+      .update({ client_note: text })
+      .eq('id', exerciseId)
+    if (error) {
+      console.error('Error guardando la respuesta:', error)
+      alert('No se pudo guardar tu respuesta. Probá de nuevo.')
+      return
+    }
+    setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, client_note: text } : ex))
+  }
+
   async function saveMeasures(form) {
     await supabase.from('client_measures').insert({
       client_record_id: clientRecordId,
@@ -150,6 +161,16 @@ export default function ClientDashboard() {
     const dayName = ex.day_label?.replace(/Semana \d+ - /, '') || 'Sin día'
     if (!groupedByDay[dayName]) groupedByDay[dayName] = []
     groupedByDay[dayName].push(ex)
+  })
+
+  // Dentro de cada día, ordenar por categoría: Movimiento y Activación
+  // primero, después Fuerza, después Core — sin perder el orden relativo
+  // que el profesor le dio a los ejercicios de una misma categoría.
+  function categoryOrder(category) {
+    return EXERCISE_PART_CATEGORIES.find(c => c.code === (category || 'strength'))?.order ?? 1
+  }
+  Object.keys(groupedByDay).forEach(day => {
+    groupedByDay[day] = [...groupedByDay[day]].sort((a, b) => categoryOrder(a.category) - categoryOrder(b.category))
   })
 
   const DAY_ORDER = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
@@ -225,6 +246,7 @@ export default function ClientDashboard() {
             groupedByDay={groupedByDay}
             completions={completions}
             onToggle={toggleExercise}
+            onSaveNote={saveClientNote}
           />
         ) : tab === 'measures' ? (
           <MeasuresView measures={measures} onSave={saveMeasures} />
@@ -241,7 +263,7 @@ export default function ClientDashboard() {
   )
 }
 
-function RoutineView({ routine, weeksAvailable, selectedWeek, setSelectedWeek, sortedDays, groupedByDay, completions, onToggle }) {
+function RoutineView({ routine, weeksAvailable, selectedWeek, setSelectedWeek, sortedDays, groupedByDay, completions, onToggle, onSaveNote }) {
   if (!routine) {
     return (
       <div className="empty-state">
@@ -276,14 +298,14 @@ function RoutineView({ routine, weeksAvailable, selectedWeek, setSelectedWeek, s
         </div>
       ) : (
         sortedDays.map(day => (
-          <DayCard key={day} day={day} exercises={groupedByDay[day]} completions={completions} onToggle={onToggle} />
+          <DayCard key={day} day={day} exercises={groupedByDay[day]} completions={completions} onToggle={onToggle} onSaveNote={onSaveNote} />
         ))
       )}
     </div>
   )
 }
 
-function DayCard({ day, exercises, completions, onToggle }) {
+function DayCard({ day, exercises, completions, onToggle, onSaveNote }) {
   const [open, setOpen] = useState(true)
   const doneCount = exercises.filter(ex => completions.has(ex.id)).length
 
@@ -299,26 +321,92 @@ function DayCard({ day, exercises, completions, onToggle }) {
       {open && (
         <div className="exlist op">
           {exercises.map(ex => (
-            <div key={ex.id} className="exitem">
-              <div className="eximg">
-                <ExerciseIcon category={ex.image_url} size={32} />
-              </div>
-              <div className="exinfo">
-                <div className="exname">{ex.name}</div>
-                <div className="exspecs">
-                  {ex.sets && <span className="chip">{ex.sets} series</span>}
-                  {ex.reps && <span className="chip">{ex.reps} reps</span>}
-                  {ex.weight && <span className="chip">{ex.weight}</span>}
-                </div>
-                {ex.description && <div className="exdesc">{ex.description}</div>}
-              </div>
-              <div className={`excheck ${completions.has(ex.id)?'ck':''}`} onClick={()=>onToggle(ex.id)}>
-                {completions.has(ex.id) && '✓'}
-              </div>
-            </div>
+            <ExerciseItem key={ex.id} ex={ex} isDone={completions.has(ex.id)} onToggle={onToggle} onSaveNote={onSaveNote} />
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function ExerciseItem({ ex, isDone, onToggle, onSaveNote }) {
+  const [noteDraft, setNoteDraft] = useState(ex.client_note || '')
+  const [savingNote, setSavingNote] = useState(false)
+  const catInfo = EXERCISE_PART_CATEGORIES.find(c => c.code === (ex.category || 'strength')) || EXERCISE_PART_CATEGORIES[1]
+
+  async function handleSaveNote() {
+    setSavingNote(true)
+    await onSaveNote(ex.id, noteDraft)
+    setSavingNote(false)
+  }
+
+  return (
+    <div className="exitem" style={{ borderLeft: `4px solid ${catInfo.color}`, flexWrap: 'wrap' }}>
+      <div className="eximg">
+        <ExerciseIcon category={ex.image_url} size={32} />
+      </div>
+      <div className="exinfo" style={{flex: 1, minWidth: 0}}>
+        <div className="exname">{ex.name}</div>
+
+        {ex.exercise_sets && ex.exercise_sets.length > 0 ? (
+          <div style={{display:'flex', flexDirection:'column', gap:4, marginTop:6}}>
+            {ex.exercise_sets.map((s, i) => (
+              <div key={i} style={{display:'flex', gap:10, fontSize:12.5, color:'#444'}}>
+                <span style={{fontWeight:600, width:54, flexShrink:0}}>Serie {s.set_number}</span>
+                {s.reps && <span>{s.reps} reps</span>}
+                {s.weight && <span>· {s.weight}</span>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="exspecs">
+            {ex.sets && <span className="chip">{ex.sets} series</span>}
+            {ex.reps && <span className="chip">{ex.reps} reps</span>}
+            {ex.weight && <span className="chip">{ex.weight}</span>}
+          </div>
+        )}
+
+        {ex.description && <div className="exdesc">{ex.description}</div>}
+
+        {ex.admin_note && (
+          <div style={{
+            marginTop: 8, padding: '8px 10px', background: '#fff8e1',
+            border: '1px solid #f59e0b', borderRadius: 8, fontSize: 12.5, color: '#7a5b00'
+          }}>
+            📝 <strong>Nota de tu profesor:</strong> {ex.admin_note}
+          </div>
+        )}
+
+        {ex.admin_note && (
+          <div style={{ marginTop: 8 }}>
+            <textarea
+              value={noteDraft}
+              onChange={e => setNoteDraft(e.target.value)}
+              placeholder="Responder a tu profesor (ej: listo, lo hice sin dolor)"
+              style={{
+                width: '100%', minHeight: 44, resize: 'vertical', fontSize: 12.5,
+                padding: '8px 10px', borderRadius: 8, border: '1px solid #ccc',
+                fontFamily: 'inherit', boxSizing: 'border-box'
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleSaveNote}
+              disabled={savingNote || noteDraft === (ex.client_note || '')}
+              style={{
+                marginTop: 6, fontSize: 12, fontWeight: 600, padding: '6px 14px',
+                borderRadius: 8, border: '1px solid #6366f1', background: '#fff',
+                color: '#6366f1', cursor: 'pointer'
+              }}
+            >
+              {savingNote ? 'Guardando...' : '💬 Guardar respuesta'}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className={`excheck ${isDone?'ck':''}`} onClick={()=>onToggle(ex.id)}>
+        {isDone && '✓'}
+      </div>
     </div>
   )
 }
