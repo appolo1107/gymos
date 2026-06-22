@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [viewingActivity, setViewingActivity] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
   const [clientNotesMap, setClientNotesMap] = useState({})
+  const [readRoutines, setReadRoutines] = useState(new Set()) // routine_ids ya leídos en esta sesión
 
   const gymId = profile?.gym_id
 
@@ -528,7 +529,7 @@ export default function AdminDashboard() {
                           <div className="client-name-cell">
                             <div className="av" style={{position:'relative'}}>
                               {c.full_name?.charAt(0).toUpperCase() || '?'}
-                              {clientNotesMap[c.routine_id] > 0 && (
+                              {clientNotesMap[c.routine_id] > 0 && !readRoutines.has(c.routine_id) && (
                                 <span style={{
                                   position:'absolute', top:-4, right:-4,
                                   background:'#6366f1', color:'#fff',
@@ -541,7 +542,7 @@ export default function AdminDashboard() {
                             <div>
                               <div style={{display:'flex', alignItems:'center', gap:6}}>
                                 {c.full_name}
-                                {clientNotesMap[c.routine_id] > 0 && (
+                                {clientNotesMap[c.routine_id] > 0 && !readRoutines.has(c.routine_id) && (
                                   <span style={{
                                     fontSize:10, fontWeight:700, color:'#818cf8',
                                     background:'#6366f115', border:'1px solid #6366f144',
@@ -582,8 +583,8 @@ export default function AdminDashboard() {
                           <div style={{display:'flex',gap:6}}>
                             <button className="ibtn" onClick={() => {
                               setViewingActivity(c)
-                              // Limpiar badge localmente de inmediato
-                              if (c.routine_id) setClientNotesMap(prev => ({ ...prev, [c.routine_id]: 0 }))
+                              // Marcar como leído en esta sesión
+                              if (c.routine_id) setReadRoutines(prev => new Set([...prev, c.routine_id]))
                             }}>📊 Actividad</button>
                             <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
                             <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
@@ -711,7 +712,7 @@ export default function AdminDashboard() {
         <ActivityModal
           client={viewingActivity}
           routines={routines}
-          onClose={() => { setViewingActivity(null); fetchClientNotes() }}
+          onClose={() => setViewingActivity(null)}
         />
       )}
     </div>
