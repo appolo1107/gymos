@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
          AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType } from 'docx'
 import { saveAs } from 'file-saver'
-import { EXERCISE_CATEGORIES, ExerciseIcon } from '../lib/exerciseIcons'
+import { EXERCISE_CATEGORIES, EXERCISE_PART_CATEGORIES, ExerciseIcon } from '../lib/exerciseIcons'
 import '../styles/admin.css'
 
 export default function AdminDashboard() {
@@ -22,25 +22,6 @@ export default function AdminDashboard() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [viewingActivity, setViewingActivity] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
-  const [gymColor, setGymColor] = useState(profile?.gyms?.theme_color || '#8b5cf6')
-
-  useEffect(() => {
-    setGymColor(profile?.gyms?.theme_color || '#8b5cf6')
-  }, [profile?.gyms?.theme_color])
-
-  // Aplicar el color como variable CSS global
-  useEffect(() => {
-    const root = document.documentElement
-    root.style.setProperty('--gym-color', gymColor)
-    root.style.setProperty('--gym-color-soft', gymColor + '1f')
-    root.style.setProperty('--gym-color-border', gymColor + '4d')
-  }, [gymColor])
-
-  async function updateGymColor(hex) {
-    setGymColor(hex)
-    if (!gymId) return
-    await supabase.from('gyms').update({ theme_color: hex }).eq('id', gymId)
-  }
 
   const gymId = profile?.gym_id
 
@@ -209,24 +190,56 @@ export default function AdminDashboard() {
     }
 
     if (exercises && exercises.length > 0) {
-      const rows = exercises
-        .filter(ex => ex.name?.trim())
-        .map((ex, i) => ({
-          routine_id: routineId,
-          name: ex.name,
-          sets: ex.sets,
-          reps: ex.reps,
-          weight: ex.weight,
-          description: ex.description,
-          image_url: ex.image_url,
-          day_label: ex.day_label,
-          order_index: i,
-        }))
+      const validExercises = exercises.filter(ex => ex.name?.trim())
+      const rows = validExercises.map((ex, i) => ({
+        routine_id: routineId,
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        description: ex.description,
+        image_url: ex.image_url,
+        day_label: ex.day_label,
+        order_index: i,
+        category: ex.category || 'strength',
+        admin_note: ex.admin_note || null,
+        // client_note no se reenvía desde el admin: se preserva tal cual
+        // la escribió el cliente, y se vuelve a borrar/recrear el ejercicio
+        // al editar, así que si el cliente ya había respondido algo, esa
+        // respuesta se conserva pasándola de vuelta aquí.
+        client_note: ex.client_note || null,
+      }))
       if (rows.length > 0) {
-        const { error: exError } = await supabase.from('exercises').insert(rows)
+        const { data: insertedExercises, error: exError } = await supabase
+          .from('exercises')
+          .insert(rows)
+          .select()
         if (exError) {
           console.error('Error guardando ejercicios:', exError)
           alert('Error al guardar los ejercicios: ' + exError.message)
+        } else if (insertedExercises) {
+          const setRows = []
+          insertedExercises.forEach((insertedEx, i) => {
+            const originalSets = validExercises[i]?.exercise_sets || []
+            originalSets.forEach((s, sIdx) => {
+              if (s.reps?.trim() || s.weight?.trim()) {
+                setRows.push({
+                  exercise_id: insertedEx.id,
+                  set_number: s.set_number || (sIdx + 1),
+                  reps: s.reps || '',
+                  weight: s.weight || '',
+                  order_index: sIdx,
+                })
+              }
+            })
+          })
+          if (setRows.length > 0) {
+            const { error: setsError } = await supabase.from('exercise_sets').insert(setRows)
+            if (setsError) {
+              console.error('Error guardando series:', setsError)
+              alert('Error al guardar las series: ' + setsError.message)
+            }
+          }
         }
       }
     }
@@ -621,23 +634,6 @@ export default function AdminDashboard() {
               <div className="tab-content">
                 <h3 className="section-title" style={{marginBottom:20}}>Configuración de cuenta</h3>
 
-                {/* Color del gimnasio */}
-                <div className="stat-card" style={{maxWidth:420, padding:'20px 24px', marginBottom:16}}>
-                  <div className="stat-label" style={{marginBottom:6, fontSize:15, fontWeight:600}}>🎨 Color de tu panel</div>
-                  <p style={{fontSize:12, color:'var(--t2)', marginBottom:4}}>Elegí el color que identifica a tu gimnasio</p>
-                  <div className="color-picker-row">
-                    {GYM_COLORS.map(c => (
-                      <div
-                        key={c.hex}
-                        className={`color-swatch ${gymColor === c.hex ? 'selected' : ''}`}
-                        style={{ background: c.hex }}
-                        onClick={() => updateGymColor(c.hex)}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-
                 {/* Cambiar contraseña */}
                 <div className="stat-card" style={{maxWidth:420, padding:'20px 24px'}}>
                   <div className="stat-label" style={{marginBottom:14, fontSize:15, fontWeight:600}}>🔒 Cambiar contraseña</div>
@@ -787,10 +783,14 @@ function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
     async function loadExercises() {
       const { data } = await supabase
         .from('exercises')
-        .select('*')
+        .select('*, exercise_sets(*)')
         .eq('routine_id', routine.id)
         .order('order_index', { ascending: true })
-      setExercises(data || [])
+      const withOrderedSets = (data || []).map(ex => ({
+        ...ex,
+        exercise_sets: (ex.exercise_sets || []).sort((a, b) => a.set_number - b.set_number)
+      }))
+      setExercises(withOrderedSets)
       setLoadingEx(false)
     }
     loadExercises()
@@ -798,7 +798,8 @@ function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
 
   function addExercise() {
     setExercises(p => [...p, {
-      day_label: 'Semana 1 - Lunes', name: '', sets: '', reps: '', weight: '', description: '', image_url: ''
+      day_label: 'Semana 1 - Lunes', name: '', sets: '', reps: '', weight: '', description: '',
+      image_url: '', category: 'strength', admin_note: '', client_note: '', exercise_sets: []
     }])
   }
 
@@ -808,6 +809,30 @@ function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
 
   function removeExercise(idx) {
     setExercises(p => p.filter((_, i) => i !== idx))
+  }
+
+  function addSet(exIdx) {
+    setExercises(p => p.map((ex, i) => {
+      if (i !== exIdx) return ex
+      const sets = ex.exercise_sets || []
+      const nextNumber = sets.length > 0 ? Math.max(...sets.map(s => s.set_number)) + 1 : 1
+      return { ...ex, exercise_sets: [...sets, { set_number: nextNumber, reps: '', weight: '' }] }
+    }))
+  }
+
+  function updateSet(exIdx, setIdx, key, value) {
+    setExercises(p => p.map((ex, i) => {
+      if (i !== exIdx) return ex
+      const sets = (ex.exercise_sets || []).map((s, j) => j === setIdx ? { ...s, [key]: value } : s)
+      return { ...ex, exercise_sets: sets }
+    }))
+  }
+
+  function removeSet(exIdx, setIdx) {
+    setExercises(p => p.map((ex, i) => {
+      if (i !== exIdx) return ex
+      return { ...ex, exercise_sets: (ex.exercise_sets || []).filter((_, j) => j !== setIdx) }
+    }))
   }
 
   async function handleSubmit(e) {
@@ -877,8 +902,10 @@ function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
               <p className="hint-text">Todavía no agregaste ejercicios. Click en "+ Agregar ejercicio" para sumar el primero.</p>
             ) : (
               <div className="exercises-list">
-                {exercises.map((ex, idx) => (
-                  <div key={idx} className="exercise-edit-card">
+                {exercises.map((ex, idx) => {
+                  const catInfo = EXERCISE_PART_CATEGORIES.find(c => c.code === (ex.category || 'strength')) || EXERCISE_PART_CATEGORIES[1]
+                  return (
+                  <div key={idx} className="exercise-edit-card" style={{ borderLeft: `4px solid ${catInfo.color}` }}>
                     <div className="exercise-edit-head">
                       <select className="fi fi-sm" value={ex.day_label || 'Semana 1 - Lunes'} onChange={e=>updateExercise(idx,'day_label',e.target.value)}>
                         {DAY_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -886,25 +913,90 @@ function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
                       <button type="button" className="rmvbtn" onClick={()=>removeExercise(idx)}>✕</button>
                     </div>
                     <input className="fi" placeholder="Nombre del ejercicio (ej: Press de banca)" value={ex.name||''} onChange={e=>updateExercise(idx,'name',e.target.value)} />
-                    <div className="exercise-specs-grid">
-                      <input className="fi fi-sm" placeholder="Series (ej: 4)" value={ex.sets||''} onChange={e=>updateExercise(idx,'sets',e.target.value)} />
-                      <input className="fi fi-sm" placeholder="Reps (ej: 10)" value={ex.reps||''} onChange={e=>updateExercise(idx,'reps',e.target.value)} />
-                      <input className="fi fi-sm" placeholder="Peso (ej: 60 kg)" value={ex.weight||''} onChange={e=>updateExercise(idx,'weight',e.target.value)} />
+
+                    <div className="ff" style={{marginTop:8}}>
+                      <label className="fl">Tipo de ejercicio</label>
+                      <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
+                        {EXERCISE_PART_CATEGORIES.map(c => (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => updateExercise(idx, 'category', c.code)}
+                            style={{
+                              padding:'6px 12px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+                              border: `1.5px solid ${c.color}`,
+                              background: (ex.category || 'strength') === c.code ? c.color : 'transparent',
+                              color: (ex.category || 'strength') === c.code ? '#fff' : c.color,
+                            }}
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <input className="fi" placeholder="Descripción / técnica del ejercicio" value={ex.description||''} onChange={e=>updateExercise(idx,'description',e.target.value)} />
-                    <div className="exercise-icon-row">
+
+                    <div className="ff" style={{marginTop:10}}>
+                      <label className="fl">Peso de referencia (opcional)</label>
+                      <input className="fi fi-sm" placeholder="ej: 60 kg" value={ex.weight||''} onChange={e=>updateExercise(idx,'weight',e.target.value)} />
+                    </div>
+
+                    <div className="ff" style={{marginTop:10}}>
+                      <label className="fl" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                        <span>Series</span>
+                        <button type="button" className="ibtn" style={{fontSize:11, padding:'3px 9px'}} onClick={()=>addSet(idx)}>+ Agregar serie</button>
+                      </label>
+                      {(!ex.exercise_sets || ex.exercise_sets.length === 0) ? (
+                        <p className="hint-text" style={{margin:'4px 0'}}>Sin series cargadas todavía. Usá "+ Agregar serie" para sumar la primera (ej: Serie 1 — 12 reps).</p>
+                      ) : (
+                        <div style={{display:'flex', flexDirection:'column', gap:6}}>
+                          {ex.exercise_sets.map((s, sIdx) => (
+                            <div key={sIdx} style={{display:'flex', gap:6, alignItems:'center'}}>
+                              <span style={{fontSize:12, color:'#666', width:56, flexShrink:0}}>Serie {s.set_number}</span>
+                              <input className="fi fi-sm" placeholder="Reps (ej: 10-12)" value={s.reps||''} onChange={e=>updateSet(idx, sIdx, 'reps', e.target.value)} />
+                              <input className="fi fi-sm" placeholder="Peso (ej: 60kg)" value={s.weight||''} onChange={e=>updateSet(idx, sIdx, 'weight', e.target.value)} />
+                              <button type="button" className="rmvbtn" onClick={()=>removeSet(idx, sIdx)}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <input className="fi" style={{marginTop:10}} placeholder="Descripción / técnica del ejercicio" value={ex.description||''} onChange={e=>updateExercise(idx,'description',e.target.value)} />
+
+                    <div className="ff" style={{marginTop:10}}>
+                      <label className="fl">📝 Nota para el cliente</label>
+                      <textarea
+                        className="fi"
+                        style={{minHeight:54, resize:'vertical', background:'#fff8e1', borderColor:'#f59e0b'}}
+                        placeholder="ej: Si te molesta el hombro, bajá el peso y priorizá la técnica"
+                        value={ex.admin_note||''}
+                        onChange={e=>updateExercise(idx,'admin_note',e.target.value)}
+                      />
+                    </div>
+
+                    {ex.client_note && (
+                      <div className="ff" style={{marginTop:8}}>
+                        <label className="fl">💬 Respuesta del cliente</label>
+                        <div style={{padding:'8px 10px', background:'#eef2ff', border:'1px solid #c7d2fe', borderRadius:8, fontSize:13, color:'#333'}}>
+                          {ex.client_note}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="exercise-icon-row" style={{marginTop:10}}>
                       <div className="exercise-icon-preview">
                         <ExerciseIcon category={ex.image_url} size={28} />
                       </div>
                       <select className="fi fi-sm" value={ex.image_url||''} onChange={e=>updateExercise(idx,'image_url',e.target.value)}>
-                        <option value="">Sin categoría / ícono genérico</option>
+                        <option value="">Sin ícono / ícono genérico</option>
                         {EXERCISE_CATEGORIES.map(c => (
                           <option key={c.code} value={c.code}>{c.label}</option>
                         ))}
                       </select>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -1205,15 +1297,3 @@ function ChangePasswordForm() {
     </form>
   )
 }
-
-// ── PALETA DE COLORES PARA EL GYM ────────────────────────────────────
-const GYM_COLORS = [
-  { name: 'Violeta',  hex: '#8b5cf6' },
-  { name: 'Cian',     hex: '#22d3ee' },
-  { name: 'Verde',    hex: '#10b981' },
-  { name: 'Naranja',  hex: '#f97316' },
-  { name: 'Rosa',     hex: '#ec4899' },
-  { name: 'Azul',     hex: '#3b82f6' },
-  { name: 'Rojo',     hex: '#ef4444' },
-  { name: 'Dorado',   hex: '#c9a227' },
-]

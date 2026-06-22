@@ -16,6 +16,16 @@ export const EXERCISE_CATEGORIES = [
   { code: 'mobility', label: '🧘 Movilidad / Estiramiento' },
 ]
 
+// Categoría de BLOQUE dentro de la rutina (no confundir con EXERCISE_CATEGORIES,
+// que es el grupo muscular para el ícono). Esta define en qué momento del día
+// va el ejercicio y con qué color se resalta: calentamiento primero, después
+// fuerza, después core. Se guarda en exercises.category.
+export const EXERCISE_PART_CATEGORIES = [
+  { code: 'activation', label: '🟢 Movimiento y Activación', color: '#16a34a', order: 0 },
+  { code: 'strength',   label: '⚪ Fuerza',                  color: '#6b7280', order: 1 },
+  { code: 'core',       label: '🔴 Core',                     color: '#dc2626', order: 2 },
+]
+
 const ICONS = {
   chest: (
     <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
