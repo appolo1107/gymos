@@ -1211,11 +1211,46 @@ function ActivityModal({ client, routines, onClose }) {
                         const dayExercises = weeksMap[week][day]
                         const doneInDay = dayExercises.filter(ex => completions.has(ex.id)).length
                         return (
-                          <div key={day} className="activity-day-row">
-                            <span className="activity-day-name">{day}</span>
-                            <span className={`activity-day-status ${doneInDay === dayExercises.length ? 'done' : doneInDay > 0 ? 'partial' : ''}`}>
-                              {doneInDay}/{dayExercises.length} completados
-                            </span>
+                          <div key={day} style={{marginBottom:12}}>
+                            <div className="activity-day-row" style={{marginBottom:6}}>
+                              <span className="activity-day-name">{day}</span>
+                              <span className={`activity-day-status ${doneInDay === dayExercises.length ? 'done' : doneInDay > 0 ? 'partial' : ''}`}>
+                                {doneInDay}/{dayExercises.length} completados
+                              </span>
+                            </div>
+                            {dayExercises.map(ex => (
+                              <div key={ex.id} style={{
+                                background:'#1a1a1a',
+                                border:'1px solid #2a2a2a',
+                                borderRadius:8,
+                                padding:'8px 12px',
+                                marginBottom:6,
+                                fontSize:13
+                              }}>
+                                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4}}>
+                                  <span style={{fontWeight:600, color:'#f0f0f0'}}>{ex.name}</span>
+                                  {completions.has(ex.id)
+                                    ? <span style={{color:'#4ade80', fontSize:11}}>✓ Completado</span>
+                                    : <span style={{color:'#666', fontSize:11}}>Pendiente</span>}
+                                </div>
+                                {ex.admin_note && (
+                                  <div style={{background:'#f59e0b15', border:'1px solid #f59e0b44', borderRadius:6, padding:'5px 8px', marginBottom:4}}>
+                                    <span style={{fontSize:11, color:'#f59e0b', fontWeight:600}}>📝 Tu nota: </span>
+                                    <span style={{fontSize:12, color:'#ccc'}}>{ex.admin_note}</span>
+                                  </div>
+                                )}
+                                {ex.client_note ? (
+                                  <div style={{background:'#6366f115', border:'1px solid #6366f144', borderRadius:6, padding:'5px 8px'}}>
+                                    <span style={{fontSize:11, color:'#818cf8', fontWeight:600}}>💬 Respuesta del cliente: </span>
+                                    <span style={{fontSize:12, color:'#ccc'}}>{ex.client_note}</span>
+                                  </div>
+                                ) : ex.admin_note ? (
+                                  <div style={{background:'#ffffff08', borderRadius:6, padding:'4px 8px'}}>
+                                    <span style={{fontSize:11, color:'#555', fontStyle:'italic'}}>Sin respuesta aún</span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
                           </div>
                         )
                       })}
