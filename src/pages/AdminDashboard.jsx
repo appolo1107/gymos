@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [viewingActivity, setViewingActivity] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
+  const [clientNotesMap, setClientNotesMap] = useState({})
 
   const gymId = profile?.gym_id
 
@@ -29,6 +30,7 @@ export default function AdminDashboard() {
     if (gymId) {
       fetchClients()
       fetchRoutines()
+      fetchClientNotes()
     } else {
       setLoading(false)
     }
@@ -138,6 +140,22 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false })
     if (!error) setClients(data || [])
     setLoading(false)
+  }
+
+  async function fetchClientNotes() {
+    const { data } = await supabase
+      .from('exercises')
+      .select('routine_id, client_note')
+      .not('client_note', 'is', null)
+      .neq('client_note', '')
+    if (data) {
+      const map = {}
+      data.forEach(ex => {
+        if (!map[ex.routine_id]) map[ex.routine_id] = 0
+        map[ex.routine_id]++
+      })
+      setClientNotesMap(map)
+    }
   }
 
   async function fetchRoutines() {
@@ -508,9 +526,29 @@ export default function AdminDashboard() {
                       {filteredClients.map(c => (
                         <div key={c.id} className="table-row table-row-5">
                           <div className="client-name-cell">
-                            <div className="av">{c.full_name?.charAt(0).toUpperCase() || '?'}</div>
+                            <div className="av" style={{position:'relative'}}>
+                              {c.full_name?.charAt(0).toUpperCase() || '?'}
+                              {clientNotesMap[c.routine_id] > 0 && (
+                                <span style={{
+                                  position:'absolute', top:-4, right:-4,
+                                  background:'#6366f1', color:'#fff',
+                                  borderRadius:'50%', fontSize:9, fontWeight:700,
+                                  width:16, height:16, display:'flex', alignItems:'center', justifyContent:'center',
+                                  border:'2px solid var(--bg)'
+                                }}>{clientNotesMap[c.routine_id]}</span>
+                              )}
+                            </div>
                             <div>
-                              <div>{c.full_name}</div>
+                              <div style={{display:'flex', alignItems:'center', gap:6}}>
+                                {c.full_name}
+                                {clientNotesMap[c.routine_id] > 0 && (
+                                  <span style={{
+                                    fontSize:10, fontWeight:700, color:'#818cf8',
+                                    background:'#6366f115', border:'1px solid #6366f144',
+                                    borderRadius:10, padding:'1px 6px'
+                                  }}>💬 {clientNotesMap[c.routine_id]} respuesta{clientNotesMap[c.routine_id] !== 1 ? 's' : ''}</span>
+                                )}
+                              </div>
                               {c.email && <div style={{fontSize:11,color:'var(--t2)'}}>{c.email}</div>}
                             </div>
                           </div>
