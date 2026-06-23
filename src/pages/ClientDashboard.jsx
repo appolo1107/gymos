@@ -118,6 +118,18 @@ export default function ClientDashboard() {
     }
   }
 
+  async function saveClientWeight(exerciseId, value) {
+    const { error } = await supabase
+      .from('exercises')
+      .update({ client_weight: value })
+      .eq('id', exerciseId)
+    if (error) {
+      console.error('Error guardando el peso:', error)
+      return
+    }
+    setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, client_weight: value } : ex))
+  }
+
   async function saveClientNote(exerciseId, text) {
     const { error } = await supabase
       .from('exercises')
@@ -247,6 +259,7 @@ export default function ClientDashboard() {
             completions={completions}
             onToggle={toggleExercise}
             onSaveNote={saveClientNote}
+            onSaveWeight={saveClientWeight}
           />
         ) : tab === 'measures' ? (
           <MeasuresView measures={measures} onSave={saveMeasures} />
@@ -263,7 +276,7 @@ export default function ClientDashboard() {
   )
 }
 
-function RoutineView({ routine, weeksAvailable, selectedWeek, setSelectedWeek, sortedDays, groupedByDay, completions, onToggle, onSaveNote }) {
+function RoutineView({ routine, weeksAvailable, selectedWeek, setSelectedWeek, sortedDays, groupedByDay, completions, onToggle, onSaveNote, onSaveWeight }) {
   if (!routine) {
     return (
       <div className="empty-state">
@@ -298,14 +311,14 @@ function RoutineView({ routine, weeksAvailable, selectedWeek, setSelectedWeek, s
         </div>
       ) : (
         sortedDays.map(day => (
-          <DayCard key={day} day={day} exercises={groupedByDay[day]} completions={completions} onToggle={onToggle} onSaveNote={onSaveNote} />
+          <DayCard key={day} day={day} exercises={groupedByDay[day]} completions={completions} onToggle={onToggle} onSaveNote={onSaveNote} onSaveWeight={onSaveWeight} />
         ))
       )}
     </div>
   )
 }
 
-function DayCard({ day, exercises, completions, onToggle, onSaveNote }) {
+function DayCard({ day, exercises, completions, onToggle, onSaveNote, onSaveWeight }) {
   const [open, setOpen] = useState(true)
   const doneCount = exercises.filter(ex => completions.has(ex.id)).length
 
@@ -321,7 +334,7 @@ function DayCard({ day, exercises, completions, onToggle, onSaveNote }) {
       {open && (
         <div className="exlist op">
           {exercises.map(ex => (
-            <ExerciseItem key={ex.id} ex={ex} isDone={completions.has(ex.id)} onToggle={onToggle} onSaveNote={onSaveNote} />
+            <ExerciseItem key={ex.id} ex={ex} isDone={completions.has(ex.id)} onToggle={onToggle} onSaveNote={onSaveNote} onSaveWeight={onSaveWeight} />
           ))}
         </div>
       )}
@@ -329,10 +342,20 @@ function DayCard({ day, exercises, completions, onToggle, onSaveNote }) {
   )
 }
 
-function ExerciseItem({ ex, isDone, onToggle, onSaveNote }) {
+function ExerciseItem({ ex, isDone, onToggle, onSaveNote, onSaveWeight }) {
   const [noteDraft, setNoteDraft] = useState(ex.client_note || '')
   const [savingNote, setSavingNote] = useState(false)
+  const [weightDraft, setWeightDraft] = useState(ex.client_weight || '')
+  const [savingWeight, setSavingWeight] = useState(false)
+  const [weightEditing, setWeightEditing] = useState(false)
   const catInfo = EXERCISE_PART_CATEGORIES.find(c => c.code === (ex.category || 'strength')) || EXERCISE_PART_CATEGORIES[1]
+
+  async function handleSaveWeight() {
+    setSavingWeight(true)
+    await onSaveWeight(ex.id, weightDraft)
+    setSavingWeight(false)
+    setWeightEditing(false)
+  }
 
   async function handleSaveNote() {
     setSavingNote(true)
@@ -362,9 +385,53 @@ function ExerciseItem({ ex, isDone, onToggle, onSaveNote }) {
           <div className="exspecs">
             {ex.sets && <span className="chip">{ex.sets} series</span>}
             {ex.reps && <span className="chip">{ex.reps} reps</span>}
-            {ex.weight && <span className="chip">{ex.weight}</span>}
+            {ex.weight && <span className="chip">📋 {ex.weight}</span>}
           </div>
         )}
+
+        {/* PESO DEL CLIENTE */}
+        <div style={{marginTop:8}}>
+          {!weightEditing ? (
+            <div style={{display:'flex', alignItems:'center', gap:8}}>
+              <span style={{
+                fontSize:12.5, fontWeight:600,
+                background: ex.client_weight ? '#e0f2fe' : '#f3f4f6',
+                color: ex.client_weight ? '#0369a1' : '#888',
+                border: ex.client_weight ? '1px solid #7dd3fc' : '1px dashed #ccc',
+                borderRadius:20, padding:'3px 12px', cursor:'pointer'
+              }} onClick={() => setWeightEditing(true)}>
+                {ex.client_weight ? `💪 Mi peso: ${ex.client_weight}` : '+ Cargar mi peso'}
+              </span>
+              {ex.client_weight && (
+                <span style={{fontSize:11, color:'#aaa', cursor:'pointer'}} onClick={() => setWeightEditing(true)}>✏️</span>
+              )}
+            </div>
+          ) : (
+            <div style={{display:'flex', gap:6, alignItems:'center', flexWrap:'wrap'}}>
+              <input
+                autoFocus
+                value={weightDraft}
+                onChange={e => setWeightDraft(e.target.value)}
+                placeholder="ej: 40 kg"
+                style={{
+                  fontSize:13, padding:'5px 10px', borderRadius:8,
+                  border:'1px solid #6366f1', width:110, outline:'none'
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveWeight(); if (e.key === 'Escape') setWeightEditing(false) }}
+              />
+              <button type="button" onClick={handleSaveWeight} disabled={savingWeight}
+                style={{fontSize:12, fontWeight:600, padding:'5px 12px', borderRadius:8,
+                  border:'none', background:'#6366f1', color:'#fff', cursor:'pointer'}}>
+                {savingWeight ? '...' : '✓ Guardar'}
+              </button>
+              <button type="button" onClick={() => { setWeightEditing(false); setWeightDraft(ex.client_weight || '') }}
+                style={{fontSize:12, padding:'5px 10px', borderRadius:8,
+                  border:'1px solid #ccc', background:'transparent', cursor:'pointer', color:'#666'}}>
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
 
         {ex.description && <div className="exdesc">{ex.description}</div>}
 
