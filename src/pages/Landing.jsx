@@ -46,11 +46,7 @@ export default function Landing() {
   const [clientsCount, clientsRef] = useCountUp(2840)
   const [routinesCount, routinesRef] = useCountUp(1560)
 
-  const reviews = [
-    { name: 'Martina Aguirre', role: 'CrossFit Reconquista', text: 'Antes manejaba todo por WhatsApp y planillas. Con GymOS mis clientes ven su rutina solos y yo veo quién entrena y quién no. Cambió todo.', avatar: 'M' },
-    { name: 'Lucas García', role: 'Fuerza Gym', text: 'Por $1.500 al mes es un regalo. Cargué las rutinas de mis 30 alumnos en una tarde y desde entonces todo es más prolijo.', avatar: 'L' },
-    { name: 'Valentina Arias', role: 'Studio Pilates VA', text: 'Lo que más me gusta es que mis clientas ven su progreso de medidas solas. Se sienten más motivadas y yo ahorro un montón de tiempo.', avatar: 'V' },
-  ]
+  const reviews = []
 
   return (
     <div className="landing-shell">
@@ -72,20 +68,20 @@ export default function Landing() {
         <div className="landing-price-card landing-fade-in landing-delay-3">
           <div className="landing-price-row">
             <div className="landing-price-old">
-              <span className="landing-price-old-amount">$1.500</span>
+              <span className="landing-price-old-amount">$17.000</span>
               <span className="landing-price-old-label">primer mes</span>
             </div>
             <div className="landing-price-arrow">→</div>
             <div className="landing-price-new">
-              <span className="landing-price-amount">$7.500</span>
+              <span className="landing-price-amount">$29.999</span>
               <span className="landing-price-period">/ mes después</span>
             </div>
           </div>
-          <div className="landing-price-label">probá GymOS por solo $1.500 el primer mes · cancelá cuando quieras</div>
+          <div className="landing-price-label">probá GymOS por solo $17.000 el primer mes · cancelá cuando quieras</div>
         </div>
 
         <div className="landing-cta landing-fade-in landing-delay-3">
-          <Link to="/register" className="gbtn landing-cta-btn">🚀 Empezar por $1.500</Link>
+          <Link to="/register" className="gbtn landing-cta-btn">🚀 Empezar por $17.000</Link>
         </div>
       </div>
 
