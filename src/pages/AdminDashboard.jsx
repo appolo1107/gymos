@@ -23,7 +23,9 @@ export default function AdminDashboard() {
   const [viewingActivity, setViewingActivity] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
   const [clientNotesMap, setClientNotesMap] = useState({})
-  const [readRoutines, setReadRoutines] = useState(new Set()) // routine_ids ya leídos en esta sesión
+  const [readRoutines, setReadRoutines] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('readRoutines') || '{}') } catch { return {} }
+  }) // { routine_id: countWhenRead }
 
   const gymId = profile?.gym_id
 
@@ -529,7 +531,7 @@ export default function AdminDashboard() {
                           <div className="client-name-cell">
                             <div className="av" style={{position:'relative'}}>
                               {c.full_name?.charAt(0).toUpperCase() || '?'}
-                              {clientNotesMap[c.routine_id] > 0 && !readRoutines.has(c.routine_id) && (
+                              {clientNotesMap[c.routine_id] > 0 && (clientNotesMap[c.routine_id] > (readRoutines[c.routine_id] || 0)) && (
                                 <span style={{
                                   position:'absolute', top:-4, right:-4,
                                   background:'#6366f1', color:'#fff',
@@ -542,7 +544,7 @@ export default function AdminDashboard() {
                             <div>
                               <div style={{display:'flex', alignItems:'center', gap:6}}>
                                 {c.full_name}
-                                {clientNotesMap[c.routine_id] > 0 && !readRoutines.has(c.routine_id) && (
+                                {clientNotesMap[c.routine_id] > 0 && (clientNotesMap[c.routine_id] > (readRoutines[c.routine_id] || 0)) && (
                                   <span style={{
                                     fontSize:10, fontWeight:700, color:'#818cf8',
                                     background:'#6366f115', border:'1px solid #6366f144',
@@ -584,7 +586,7 @@ export default function AdminDashboard() {
                             <button className="ibtn" onClick={() => {
                               setViewingActivity(c)
                               // Marcar como leído en esta sesión
-                              if (c.routine_id) setReadRoutines(prev => new Set([...prev, c.routine_id]))
+                              if (c.routine_id) setReadRoutines(prev => { const next = { ...prev, [c.routine_id]: clientNotesMap[c.routine_id] || 0 }; localStorage.setItem('readRoutines', JSON.stringify(next)); return next })
                             }}>📊 Actividad</button>
                             <button className="ibtn" onClick={() => { setEditingClient(c); setShowClientModal(true) }}>✏️ Editar</button>
                             <button className="ibtn" onClick={() => deleteClient(c.id)}>🗑️</button>
@@ -1275,21 +1277,6 @@ function ActivityModal({ client, routines, onClose }) {
                                   {completions.has(ex.id)
                                     ? <span style={{color:'#4ade80', fontSize:11}}>✓ Completado</span>
                                     : <span style={{color:'#666', fontSize:11}}>Pendiente</span>}
-                                </div>
-                                {/* PESO SUGERIDO vs PESO DEL CLIENTE */}
-                                <div style={{display:'flex', gap:6, flexWrap:'wrap', marginBottom:4}}>
-                                  {ex.weight && (
-                                    <span style={{fontSize:11, background:'#ffffff10', border:'1px solid #333', borderRadius:12, padding:'2px 8px', color:'#aaa'}}>
-                                      📋 Sugerido: {ex.weight}
-                                    </span>
-                                  )}
-                                  {ex.client_weight ? (
-                                    <span style={{fontSize:11, background:'#0ea5e920', border:'1px solid #0ea5e966', borderRadius:12, padding:'2px 8px', color:'#38bdf8', fontWeight:600}}>
-                                      💪 Cargó: {ex.client_weight}
-                                    </span>
-                                  ) : ex.weight ? (
-                                    <span style={{fontSize:11, color:'#444', fontStyle:'italic'}}>Sin peso cargado</span>
-                                  ) : null}
                                 </div>
                                 {ex.admin_note && (
                                   <div style={{background:'#f59e0b15', border:'1px solid #f59e0b44', borderRadius:6, padding:'5px 8px', marginBottom:4}}>
