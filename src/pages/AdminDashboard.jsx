@@ -1276,6 +1276,21 @@ function ActivityModal({ client, routines, onClose }) {
                                     ? <span style={{color:'#4ade80', fontSize:11}}>✓ Completado</span>
                                     : <span style={{color:'#666', fontSize:11}}>Pendiente</span>}
                                 </div>
+                                {/* PESO SUGERIDO vs PESO DEL CLIENTE */}
+                                <div style={{display:'flex', gap:6, flexWrap:'wrap', marginBottom:4}}>
+                                  {ex.weight && (
+                                    <span style={{fontSize:11, background:'#ffffff10', border:'1px solid #333', borderRadius:12, padding:'2px 8px', color:'#aaa'}}>
+                                      📋 Sugerido: {ex.weight}
+                                    </span>
+                                  )}
+                                  {ex.client_weight ? (
+                                    <span style={{fontSize:11, background:'#0ea5e920', border:'1px solid #0ea5e966', borderRadius:12, padding:'2px 8px', color:'#38bdf8', fontWeight:600}}>
+                                      💪 Cargó: {ex.client_weight}
+                                    </span>
+                                  ) : ex.weight ? (
+                                    <span style={{fontSize:11, color:'#444', fontStyle:'italic'}}>Sin peso cargado</span>
+                                  ) : null}
+                                </div>
                                 {ex.admin_note && (
                                   <div style={{background:'#f59e0b15', border:'1px solid #f59e0b44', borderRadius:6, padding:'5px 8px', marginBottom:4}}>
                                     <span style={{fontSize:11, color:'#f59e0b', fontWeight:600}}>📝 Tu nota: </span>
