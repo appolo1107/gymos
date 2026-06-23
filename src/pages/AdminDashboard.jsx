@@ -996,7 +996,7 @@ function RoutineModal({ routine, onSave, onClose, myTemplates = [] }) {
                         <div style={{display:'flex', flexDirection:'column', gap:6}}>
                           {ex.exercise_sets.map((s, sIdx) => (
                             <div key={sIdx} style={{display:'flex', gap:6, alignItems:'center'}}>
-                              <span style={{fontSize:12, color:'#666', width:56, flexShrink:0}}>Serie {s.set_number}</span>
+                              <input className="fi fi-sm" placeholder="Serie" style={{width:70, flexShrink:0, textAlign:'center'}} value={s.set_number||''} onChange={e=>updateSet(idx, sIdx, 'set_number', e.target.value)} />
                               <input className="fi fi-sm" placeholder="Reps (ej: 10-12)" value={s.reps||''} onChange={e=>updateSet(idx, sIdx, 'reps', e.target.value)} />
                               <input className="fi fi-sm" placeholder="Peso (ej: 60kg)" value={s.weight||''} onChange={e=>updateSet(idx, sIdx, 'weight', e.target.value)} />
                               <button type="button" className="rmvbtn" onClick={()=>removeSet(idx, sIdx)}>✕</button>
