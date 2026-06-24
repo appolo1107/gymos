@@ -434,27 +434,27 @@ export default function AdminDashboard() {
             {tab === 'overview' && (
               <div className="tab-content">
                 <div className="stats-grid">
-                  <div className="stat-card">
+                  <div className="stat-card" onClick={() => setTab('clients')} style={{cursor:'pointer'}} title="Ver clientes">
                     <div className="stat-label">Clientes activos</div>
                     <div className="stat-value">{activeClients}</div>
                     <div className="stat-sub good">Total: {clients.length}</div>
                   </div>
-                  <div className="stat-card">
+                  <div className="stat-card" onClick={() => setTab('clients')} style={{cursor:'pointer'}} title="Ver clientes vencidos">
                     <div className="stat-label">Pagos vencidos</div>
                     <div className="stat-value">{overdueClients}</div>
                     <div className={`stat-sub ${overdueClients > 0 ? 'bad' : 'good'}`}>
                       {overdueClients > 0 ? 'Requieren atención' : 'Todo al día ✓'}
                     </div>
                   </div>
-                  <div className="stat-card">
+                  <div className="stat-card" onClick={() => setTab('routines')} style={{cursor:'pointer'}} title="Ver rutinas">
                     <div className="stat-label">Rutinas cargadas</div>
                     <div className="stat-value">{routines.length}</div>
                     <div className="stat-sub muted">Activas en el sistema</div>
                   </div>
-                  <div className="stat-card">
+                  <div className="stat-card" onClick={() => setTab('config')} style={{cursor:'pointer'}} title="Ver configuración">
                     <div className="stat-label">Tu plan</div>
                     <div className="stat-value green">{isPro ? 'Pro' : 'Free'}</div>
-                    <div className="stat-sub muted">{isPro ? '$7.500 / mes' : 'Hasta 3 clientes'}</div>
+                    <div className="stat-sub muted">{isPro ? '$29.999 / mes' : 'Hasta 3 clientes'}</div>
                   </div>
                 </div>
 
