@@ -397,13 +397,13 @@ export default function AdminDashboard() {
           </div>
           <div className="topbar-right">
             {subStatus === 'authorized' ? (
-              <span className="admin-badge">✓ Suscripción activa</span>
+              <span className="admin-badge">✓ Membresía activa — $29.999/mes</span>
             ) : subLoading ? (
               <span className="admin-badge" style={{background:'#f59e0b'}}>⏳ Verificando...</span>
             ) : (
               <div style={{display:'flex', gap:8, alignItems:'center'}}>
                 <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
-                  💳 Activar membresía
+                  💳 Activar membresía — $29.999/mes
                 </button>
                 <button className="gbtn" onClick={checkPayment} disabled={subLoading}
                   style={{background:'transparent', border:'1px solid #666', color:'#ccc', fontSize:12, padding:'6px 12px'}}>
