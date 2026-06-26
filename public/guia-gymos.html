@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía de uso — GymOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & tokens ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0D1117;
+      --surface:   #161B22;
+      --surface2:  #1C2333;
+      --border:    #1E2A3A;
+      --blue:      #00B4D8;
+      --blue-dim:  #0077A8;
+      --cyan:      #90E0EF;
+      --green:     #2ECC71;
+      --green-dim: #1A5C3A;
+      --purple:    #7C5CBF;
+      --yellow:    #F0C040;
+      --white:     #F0F6FC;
+      --muted:     #8B949E;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body:    'Inter', sans-serif;
+      --radius:    10px;
+      --radius-lg: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar nav ──────────────────────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px; height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 28px 0 40px;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--blue);
+      padding: 0 24px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+    }
+    .sidebar-logo span { color: var(--muted); font-weight: 400; font-size: 12px; display: block; margin-top: 2px; }
+
+    .nav-group { margin-bottom: 6px; }
+    .nav-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding: 8px 24px 4px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 24px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s, background .15s;
+      border-left: 2px solid transparent;
+    }
+    .nav-link:hover { color: var(--white); background: var(--surface2); }
+    .nav-link.active { color: var(--blue); border-left-color: var(--blue); background: rgba(0,180,216,.06); }
+    .nav-link .icon { font-size: 14px; width: 18px; flex-shrink: 0; }
+
+    /* ── Main layout ──────────────────────────────────────────────────── */
+    .main {
+      margin-left: 240px;
+      min-height: 100vh;
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      padding: 72px 64px 56px;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,180,216,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .hero h1 em { font-style: normal; color: var(--blue); }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 520px;
+      margin-bottom: 32px;
+    }
+    .badge-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+    }
+    .badge.blue { border-color: rgba(0,180,216,.35); color: var(--cyan); background: rgba(0,180,216,.08); }
+    .badge.green { border-color: rgba(46,204,113,.35); color: var(--green); background: rgba(46,204,113,.08); }
+
+    /* ── Content area ─────────────────────────────────────────────────── */
+    .content { padding: 48px 64px 80px; max-width: 860px; }
+
+    /* ── Part banner ──────────────────────────────────────────────────── */
+    .part-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px;
+      border-radius: var(--radius-lg);
+      margin: 48px 0 32px;
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .part-banner.admin { background: linear-gradient(135deg, rgba(0,180,216,.15), rgba(0,180,216,.04)); border: 1px solid rgba(0,180,216,.25); }
+    .part-banner.client { background: linear-gradient(135deg, rgba(46,204,113,.15), rgba(46,204,113,.04)); border: 1px solid rgba(46,204,113,.25); }
+    .part-banner .part-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .part-banner.admin .part-num { background: var(--blue); color: #000; }
+    .part-banner.client .part-num { background: var(--green); color: #000; }
+    .part-banner .part-title { display: flex; flex-direction: column; gap: 2px; }
+    .part-banner .part-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+
+    /* ── Section headers ──────────────────────────────────────────────── */
+    .section-block { margin-bottom: 48px; }
+    .section-eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+    .section-block h2 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -.4px;
+      margin-bottom: 12px;
+    }
+    .section-block .divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 20px;
+    }
+    .section-block p { color: var(--muted); margin-bottom: 14px; }
+    .section-block p strong { color: var(--white); }
+
+    /* ── Steps ────────────────────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+    .step {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color .15s;
+    }
+    .step:hover { border-color: rgba(0,180,216,.3); }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #000;
+      font-weight: 700;
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-content strong { display: block; color: var(--white); font-size: 14px; margin-bottom: 3px; }
+    .step-content span { color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+    .step-content code {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      color: var(--cyan);
+      font-family: monospace;
+    }
+
+    /* ── Feature table ────────────────────────────────────────────────── */
+    .feature-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 20px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .feature-table th {
+      background: var(--surface2);
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+    .feature-table td {
+      padding: 11px 16px;
+      font-size: 13.5px;
+      border-top: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .feature-table tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+    .feature-table td:first-child { color: var(--white); font-weight: 500; width: 38%; }
+    .feature-table td:last-child { color: var(--muted); }
+
+    /* ── Pricing table ────────────────────────────────────────────────── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .pricing-card {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 24px;
+      background: var(--surface);
+    }
+    .pricing-card.featured {
+      border-color: rgba(0,180,216,.4);
+      background: linear-gradient(145deg, rgba(0,180,216,.07), var(--surface));
+    }
+    .pricing-card .plan-name {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .pricing-card .plan-price {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    .pricing-card .plan-price span { font-size: 13px; color: var(--muted); font-weight: 400; }
+    .pricing-card .plan-note { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .plan-feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .plan-feature .check { color: var(--green); flex-shrink: 0; }
+    .plan-feature .dash { color: var(--border); flex-shrink: 0; }
+
+    /* ── Callouts ─────────────────────────────────────────────────────── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 13.5px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .callout.tip  { background: rgba(240,192,64,.06); border: 1px solid rgba(240,192,64,.2); color: #d4aa37; }
+    .callout.note { background: rgba(46,204,113,.06); border: 1px solid rgba(46,204,113,.2); color: #2ECC71; }
+    .callout.info { background: rgba(0,180,216,.06); border: 1px solid rgba(0,180,216,.2); color: var(--cyan); }
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body { line-height: 1.6; }
+    .callout-body strong { display: block; margin-bottom: 2px; font-weight: 600; }
+
+    /* ── FAQ ──────────────────────────────────────────────────────────── */
+    .faq-list { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+    details.faq-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    details.faq-item[open] { border-color: rgba(0,180,216,.3); }
+    details.faq-item summary {
+      padding: 14px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      user-select: none;
+    }
+    details.faq-item summary::-webkit-details-marker { display: none; }
+    details.faq-item summary::after {
+      content: '+';
+      font-size: 18px;
+      color: var(--blue);
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+    details.faq-item[open] summary::after { content: '−'; }
+    .faq-answer {
+      padding: 0 18px 16px;
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.7;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    /* ── Sub-heading ──────────────────────────────────────────────────── */
+    .sub-heading {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+      margin: 24px 0 10px;
+    }
+
+    /* ── Status badges inline ─────────────────────────────────────────── */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .tag.green { background: rgba(46,204,113,.15); color: var(--green); border: 1px solid rgba(46,204,113,.25); }
+    .tag.red   { background: rgba(231,76,60,.15);  color: #e74c3c;      border: 1px solid rgba(231,76,60,.25); }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-brand { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--blue); }
+    .footer-copy { font-size: 12px; color: var(--muted); }
+    .footer-link { color: var(--blue); text-decoration: none; font-size: 12px; }
+    .footer-link:hover { text-decoration: underline; }
+
+    /* ── Mobile ───────────────────────────────────────────────────────── */
+    .hamburger { display: none; }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .hero { padding: 48px 24px 36px; }
+      .content { padding: 32px 24px 60px; }
+      .footer { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .hamburger {
+        display: flex; align-items: center; justify-content: center;
+        position: fixed; top: 16px; left: 16px; z-index: 200;
+        width: 40px; height: 40px; border-radius: 8px;
+        background: var(--surface); border: 1px solid var(--border);
+        cursor: pointer; font-size: 18px; color: var(--white);
+      }
+      .overlay {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 99;
+      }
+      .overlay.show { display: block; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+
+<!-- Mobile hamburger -->
+<button class="hamburger" id="hamburger" aria-label="Abrir menú">☰</button>
+<div class="overlay" id="overlay"></div>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    gymOS
+    <span>Guía de usuario</span>
+  </div>
+
+  <nav>
+    <div class="nav-group">
+      <div class="nav-label">Introducción</div>
+      <a href="#intro" class="nav-link active"><span class="icon">📖</span> ¿Qué es GymOS?</a>
+      <a href="#problema" class="nav-link"><span class="icon">💡</span> El problema</a>
+      <a href="#funciones" class="nav-link"><span class="icon">⚡</span> Funcionalidades</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Para el admin</div>
+      <a href="#admin-registro" class="nav-link"><span class="icon">🏢</span> Registro</a>
+      <a href="#admin-clientes" class="nav-link"><span class="icon">👥</span> Agregar clientes</a>
+      <a href="#admin-rutinas" class="nav-link"><span class="icon">📋</span> Crear rutinas</a>
+      <a href="#admin-asignar" class="nav-link"><span class="icon">✅</span> Asignar rutinas</a>
+      <a href="#admin-actividad" class="nav-link"><span class="icon">📊</span> Ver actividad</a>
+      <a href="#admin-config" class="nav-link"><span class="icon">⚙️</span> Configuración</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Para el alumno</div>
+      <a href="#cliente-registro" class="nav-link"><span class="icon">🙋</span> Registrarse</a>
+      <a href="#cliente-rutina" class="nav-link"><span class="icon">🏋️</span> Ver rutina</a>
+      <a href="#cliente-peso" class="nav-link"><span class="icon">⚖️</span> Cargar peso</a>
+      <a href="#cliente-medidas" class="nav-link"><span class="icon">📏</span> Medidas</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Más</div>
+      <a href="#precios" class="nav-link"><span class="icon">💳</span> Planes y precios</a>
+      <a href="#faq" class="nav-link"><span class="icon">❓</span> Preguntas frecuentes</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ── Main ──────────────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Hero -->
+  <header class="hero" id="intro">
+    <p class="hero-eyebrow">Software para gimnasios · v1.0</p>
+    <h1>Gestión de gimnasios<br/><em>sin complicaciones</em></h1>
+    <p class="hero-sub">
+      Todo lo que necesitás saber para usar GymOS desde el primer día.
+      Para dueños de gimnasio y alumnos.
+    </p>
+    <div class="badge-row">
+      <span class="badge blue">🏢 Para el admin</span>
+      <span class="badge green">🙋 Para el alumno</span>
+      <span class="badge">📱 Funciona desde el celular</span>
+      <span class="badge">⚡ Sin instalar nada</span>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ── ¿Qué es GymOS? ──────────────────────────────────────────────── -->
+    <section class="section-block" id="intro-desc">
+      <p>
+        GymOS es una plataforma de gestión para gimnasios pequeños y medianos.
+        Permite al entrenador o dueño <strong>gestionar clientes, crear rutinas personalizadas,
+        controlar pagos y ver la actividad de cada alumno</strong> — todo desde el celular
+        o la computadora, sin instalar nada.
+      </p>
+    </section>
+
+    <!-- ── El problema ─────────────────────────────────────────────────── -->
+    <section class="section-block" id="problema">
+      <div class="section-eyebrow">Contexto</div>
+      <h2>¿Qué problema resuelve GymOS?</h2>
+      <div class="divider"></div>
+      <p>La mayoría de los gimnasios pequeños manejan todo por WhatsApp, planillas o papel:</p>
+
+      <table class="feature-table">
+        <thead>
+          <tr><th>Problema</th><th>Cómo lo resuelve GymOS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Rutinas que se pierden o confunden</td><td>Cada cliente tiene su rutina asignada en su perfil personal</td></tr>
+          <tr><td>Cobros que se olvidan o registran mal</td><td>Control de membresías con alertas automáticas de vencimiento</td></tr>
+          <tr><td>Clientes que no saben cuándo vence su membresía</td><td>Notificación automática 3 días antes del vencimiento</td></tr>
+          <tr><td>El entrenador no puede ver quién entrenó</td><td>Panel de actividad en tiempo real por cliente</td></tr>
+          <tr><td>Nada queda registrado de forma profesional</td><td>Reportes exportables en Word con toda la actividad</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <span class="callout-icon">💬</span>
+        <div class="callout-body">
+          <strong>Sin WhatsApp, sin planillas, sin papel.</strong>
+          El entrenador gestiona desde su panel. El cliente accede a su rutina y progreso desde su propio perfil.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Funcionalidades ─────────────────────────────────────────────── -->
+    <section class="section-block" id="funciones">
+      <div class="section-eyebrow">Overview</div>
+      <h2>Funcionalidades</h2>
+      <div class="divider"></div>
+
+      <p class="sub-heading">Panel del Administrador</p>
+      <table class="feature-table">
+        <thead><tr><th>Función</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td>Rutinas personalizadas</td><td>Creá rutinas con ejercicios, series, repeticiones, peso sugerido, notas técnicas y categorías visuales por color.</td></tr>
+          <tr><td>Control de membresías</td><td>Ves quiénes están activos, vencidos o con pago pendiente. El sistema avisa automáticamente cuando faltan 3 días.</td></tr>
+          <tr><td>Actividad en tiempo real</td><td>Ve qué ejercicios completó cada cliente, el peso que cargó en cada serie y las respuestas a tus notas.</td></tr>
+          <tr><td>Sistema de notas</td><td>Dejá notas técnicas en cada ejercicio. El cliente puede responderte. Recibís una notificación con contador.</td></tr>
+          <tr><td>Plantillas de rutinas</td><td>Marcá hasta 3 rutinas como favoritas o duplicá cualquier rutina con un solo clic.</td></tr>
+          <tr><td>Logo e identidad visual</td><td>Subí el logo de tu gimnasio y elegí el color principal de la interfaz.</td></tr>
+          <tr><td>Exportar reportes</td><td>Descargá un reporte completo de cada cliente en formato Word (.docx).</td></tr>
+        </tbody>
+      </table>
+
+      <p class="sub-heading">Panel del Cliente</p>
+      <table class="feature-table">
+        <thead><tr><th>Función</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td>Acceso desde el celular</td><td>Entra desde cualquier celular sin descargar ninguna app. Funciona en el navegador.</td></tr>
+          <tr><td>Ver rutina por día</td><td>La rutina aparece organizada por semanas y días, con navegación por botones.</td></tr>
+          <tr><td>Marcar ejercicios</td><td>Tildá cada ejercicio a medida que lo realizás. El porcentaje de adherencia se actualiza solo.</td></tr>
+          <tr><td>Cargar su propio peso</td><td>Registrá el peso con el que realizaste cada ejercicio. El entrenador lo ve en tiempo real.</td></tr>
+          <tr><td>Notas del entrenador</td><td>Si el entrenador dejó una nota, la podés ver y responder desde tu panel.</td></tr>
+          <tr><td>Medidas corporales</td><td>Cargá tu progreso (peso, grasa, cintura, cadera, pecho, masa muscular) y ve tu historial con gráficos.</td></tr>
+          <tr><td>Alertas de vencimiento</td><td>Notificación en tu panel si la membresía está por vencer (3 días o menos).</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PARTE 1 — ADMIN
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="part-banner admin">
+      <div class="part-num">1</div>
+      <div class="part-title">
+        <span class="part-label">Parte 1</span>
+        Para el Dueño del Gimnasio
+      </div>
+    </div>
+
+    <!-- Paso 1: Registro -->
+    <section class="section-block" id="admin-registro">
+      <div class="section-eyebrow">Admin · Paso 1</div>
+      <h2>Registrar el gimnasio</h2>
+      <div class="divider"></div>
+      <p>El proceso de registro está diseñado para completarse en menos de 3 minutos.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ingresá al sitio web</strong>
+            <span>Entrá a la web y hacé clic en <code>"Registrar mi gimnasio"</code>.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Elegí el rol Administrador</strong>
+            <span>Seleccioná la opción <code>Administrador</code> en la pantalla de selección de rol.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Completá los datos del gimnasio</strong>
+            <span>Nombre, ciudad, teléfono e Instagram (opcional).</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Creá tu cuenta</strong>
+            <span>Ingresá tu email y una contraseña (mínimo 8 caracteres).</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <strong>Elegí tu plan y confirmá</strong>
+            <span>Hacé clic en <code>"Crear mi gimnasio"</code>. Serás redirigido a tu panel automáticamente.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <strong>Tip</strong>
+          El email que usás para registrarte es el que vas a usar para ingresar cada vez que iniciés sesión.
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 2: Clientes -->
+    <section class="section-block" id="admin-clientes">
+      <div class="section-eyebrow">Admin · Paso 2</div>
+      <h2>Agregar clientes</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ir a la sección Clientes</strong>
+            <span>En el menú lateral izquierdo, hacé clic en <code>Clientes</code>.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Clic en "+ Agregar cliente"</strong>
+            <span>El botón está en la esquina superior derecha.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Completá el formulario</strong>
+            <span>Nombre completo, email, teléfono, estado de membresía (<span class="tag green">✅ Activa</span> / <span class="tag red">❌ Inactiva</span>) y fecha de próximo vencimiento.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Guardá el cliente</strong>
+            <span>Hacé clic en <code>"Guardar cliente"</code>. El alumno aparecerá en la lista.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <strong>Importante</strong>
+          El email que cargás acá es clave: el cliente debe registrarse usando exactamente ese mismo email.
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 3: Rutinas -->
+    <section class="section-block" id="admin-rutinas">
+      <div class="section-eyebrow">Admin · Paso 3</div>
+      <h2>Crear una rutina</h2>
+      <div class="divider"></div>
+      <p>Las rutinas se organizan por <strong>semanas y días</strong>. Podés crear rutinas reutilizables y asignarlas a múltiples alumnos.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ir a Rutinas</strong>
+            <span>En el menú lateral, hacé clic en <code>Rutinas</code> → <code>"+ Nueva rutina"</code>.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Datos generales</strong>
+            <span>Nombre de la rutina, días por semana, duración en meses y una descripción opcional. Si tenés plantillas favoritas, aparecen arriba para cargar datos automáticamente.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Agregá los ejercicios por día</strong>
+            <span>Seleccioná semana y día (ej: Semana 1 - Lunes). Completá nombre del ejercicio, tipo, series, repeticiones y peso sugerido.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Nota para el cliente (opcional)</strong>
+            <span>En cada ejercicio podés dejar una nota personalizada. Ej: <em>"Si te molesta el hombro, bajá el peso y priorizá la técnica."</em></span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <strong>Icono del ejercicio</strong>
+            <span>Elegí el grupo muscular (Pecho, Espalda, Piernas…) para identificación visual.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <strong>Guardá la rutina</strong>
+            <span>Hacé clic en <code>"Guardar rutina"</code>. Queda disponible para asignar a cualquier alumno.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <strong>Tip</strong>
+          Podés duplicar cualquier rutina existente con un solo clic, o marcar hasta 3 rutinas como favoritas para usarlas como plantilla.
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 4: Asignar -->
+    <section class="section-block" id="admin-asignar">
+      <div class="section-eyebrow">Admin · Paso 4</div>
+      <h2>Asignar la rutina</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ir a Asignar rutinas</strong>
+            <span>Hacé clic en <code>Asignar rutinas</code> en el menú lateral.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Seleccioná el alumno</strong>
+            <span>Buscá al cliente en la lista.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Elegí la rutina del selector</strong>
+            <span>Del listado de rutinas disponibles, seleccioná la que corresponda.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Confirmá</strong>
+            <span>Hacé clic en <code>"✓ Confirmar"</code>. El alumno ve la rutina de inmediato en su app.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <span class="callout-icon">📌</span>
+        <div class="callout-body">
+          El alumno puede tener solo una rutina activa a la vez. Si le asignás una nueva, la anterior queda reemplazada.
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 5: Actividad -->
+    <section class="section-block" id="admin-actividad">
+      <div class="section-eyebrow">Admin · Paso 5</div>
+      <h2>Ver la actividad del cliente</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ir a la sección Clientes</strong>
+            <span>Hacé clic en <code>📊 Actividad</code> en la fila del cliente que querés ver.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Ver el resumen</strong>
+            <span>Ves adherencia, ejercicios completados, detalle por día y última medición corporal.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Exportar reporte</strong>
+            <span>Desde ahí podés descargar el reporte completo en formato Word <code>(.docx)</code>.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 6: Configuración -->
+    <section class="section-block" id="admin-config">
+      <div class="section-eyebrow">Admin · Paso 6</div>
+      <h2>Personalizar el panel</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ir a ⚙️ Configuración</strong>
+            <span>Hacé clic en <code>Configuración</code> en el menú lateral.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Subí el logo</strong>
+            <span>Usá el botón en la barra superior para subir el logo de tu gimnasio. Aparecerá también en el panel de tus clientes.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Elegí el color principal</strong>
+            <span>Seleccioná el color de tu marca. Se aplica a toda la interfaz instantáneamente.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PARTE 2 — CLIENTE
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="part-banner client">
+      <div class="part-num">2</div>
+      <div class="part-title">
+        <span class="part-label">Parte 2</span>
+        Para el Alumno
+      </div>
+    </div>
+
+    <!-- Cliente: Registro -->
+    <section class="section-block" id="cliente-registro">
+      <div class="section-eyebrow">Alumno · Paso 1</div>
+      <h2>Registrarse</h2>
+      <div class="divider"></div>
+      <p>Como alumno, no necesitás registrarte vos mismo. Tu gimnasio crea tu cuenta y vos completás el registro con los datos que él ya cargó.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Abrí el link de GymOS</strong>
+            <span>Usá el link que te compartió tu gimnasio o ingresá directamente al sitio.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Elegí el rol Cliente</strong>
+            <span>En la pantalla de selección, tocá <code>Cliente</code>.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Completá tus datos</strong>
+            <span>Tu nombre, el <strong>mismo email que le diste a tu gimnasio</strong>, y una contraseña.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Hacé clic en "Crear mi cuenta"</strong>
+            <span>Si el email coincide con el que cargó tu entrenador, vas a entrar directamente a tu panel.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <strong>Instalá la app (opcional)</strong>
+            <span>En Safari/Chrome tocá <em>Compartir → Agregar a inicio</em>. GymOS funciona como app sin ir al App Store.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <strong>Si aparece un error al registrarte</strong>, verificá con tu gimnasio que el email cargado en tu perfil sea exactamente el mismo que estás usando.
+        </div>
+      </div>
+    </section>
+
+    <!-- Cliente: Rutina -->
+    <section class="section-block" id="cliente-rutina">
+      <div class="section-eyebrow">Alumno · Paso 2 y 3</div>
+      <h2>Ver y completar la rutina</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Seleccioná el día de hoy</strong>
+            <span>Al entrar ves tu rutina organizada por semanas y días. Tocá el día que corresponda.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Revisá los ejercicios</strong>
+            <span>Cada ejercicio muestra nombre, series, repeticiones, peso sugerido e icono del grupo muscular.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Marcá el ejercicio como completado</strong>
+            <span>Tocá el círculo <code>○</code> al lado de cada ejercicio cuando lo terminés. Se pone <code>✓</code> y el porcentaje de adherencia sube.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Leé las notas del entrenador</strong>
+            <span>Las notas aparecen con fondo amarillo. Son indicaciones personalizadas para vos — prestales atención.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <strong>Respondé las notas (opcional)</strong>
+            <span>Si querés contestarle al entrenador, escribí tu respuesta en el campo de texto. Él recibe una notificación.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cliente: Peso -->
+    <section class="section-block" id="cliente-peso">
+      <div class="section-eyebrow">Alumno · Paso 4</div>
+      <h2>Cargar tu peso en cada ejercicio</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Tocá "+ Cargar mi peso"</strong>
+            <span>El botón aparece debajo de cada ejercicio en la rutina del día.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Ingresá el peso con el que trabajaste</strong>
+            <span>En kg. Si usaste peso corporal podés escribir 0 o dejar el campo en blanco.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Confirmá</strong>
+            <span>El dato se guarda y tu entrenador lo ve en tiempo real desde su panel.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          Registrar el peso de cada sesión te permite ver tu progreso semana a semana. Es la herramienta más simple para confirmar que estás avanzando.
+        </div>
+      </div>
+    </section>
+
+    <!-- Cliente: Medidas -->
+    <section class="section-block" id="cliente-medidas">
+      <div class="section-eyebrow">Alumno · Paso 5 y 6</div>
+      <h2>Registrar medidas y ver tu progreso</h2>
+      <div class="divider"></div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ir a "Medidas corporales"</strong>
+            <span>En tu perfil, tocá la pestaña <code>Medidas corporales</code>.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Completá los campos</strong>
+            <span>Peso (kg), grasa corporal (%), cintura, cadera, pecho, masa muscular. No es obligatorio llenarlos todos.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Guardá</strong>
+            <span>Hacé clic en <code>"💾 Guardar medidas"</code>. El historial queda guardado con la fecha del día.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Revisá tu evolución</strong>
+            <span>En la misma pestaña podés ver gráficos de evolución de cada medida a lo largo del tiempo.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <span class="callout-icon">📊</span>
+        <div class="callout-body">
+          Tu entrenador también puede ver tus medidas desde su panel. Esto le permite ajustar tu rutina o darte indicaciones según tu progreso real.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Precios ──────────────────────────────────────────────────────── -->
+    <section class="section-block" id="precios">
+      <div class="section-eyebrow">Planes</div>
+      <h2>Planes y precios</h2>
+      <div class="divider"></div>
+
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="plan-name">Plan Gratuito</div>
+          <div class="plan-price">$0 <span>/ mes</span></div>
+          <div class="plan-note">Para empezar sin costo</div>
+          <div class="plan-feature"><span class="check">✓</span> Hasta 3 clientes</div>
+          <div class="plan-feature"><span class="check">✓</span> Rutinas ilimitadas</div>
+          <div class="plan-feature"><span class="check">✓</span> Medidas corporales</div>
+          <div class="plan-feature"><span class="check">✓</span> Exportar reportes</div>
+          <div class="plan-feature"><span class="check">✓</span> Logo del gimnasio</div>
+          <div class="plan-feature"><span class="check">✓</span> Color personalizable</div>
+          <div class="plan-feature"><span class="dash">—</span> Soporte prioritario</div>
+        </div>
+        <div class="pricing-card featured">
+          <div class="plan-name" style="color:var(--blue)">Plan Pro</div>
+          <div class="plan-price">$17.000 <span>primer mes</span></div>
+          <div class="plan-note">Luego $29.999/mes · Sin contratos</div>
+          <div class="plan-feature"><span class="check">✓</span> Clientes ilimitados</div>
+          <div class="plan-feature"><span class="check">✓</span> Rutinas ilimitadas</div>
+          <div class="plan-feature"><span class="check">✓</span> Medidas corporales</div>
+          <div class="plan-feature"><span class="check">✓</span> Exportar reportes</div>
+          <div class="plan-feature"><span class="check">✓</span> Logo del gimnasio</div>
+          <div class="plan-feature"><span class="check">✓</span> Color personalizable</div>
+          <div class="plan-feature"><span class="check">✓</span> Soporte prioritario</div>
+        </div>
+      </div>
+
+      <p class="sub-heading">Cómo activar el Plan Pro</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Hacé clic en "💳 Activar membresía"</strong>
+            <span>El botón está visible en tu panel principal.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Pagá por Mercado Pago</strong>
+            <span>Tarjeta de débito, crédito o dinero en cuenta. Primer mes: $17.000.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Confirmá el pago</strong>
+            <span>Volvé al panel y hacé clic en <code>"✓ Ya pagué"</code>. El estado cambia a <span class="tag green">✅ Membresía activa</span>.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FAQ ────────────────────────────────────────────────────────────── -->
+    <section class="section-block" id="faq">
+      <div class="section-eyebrow">Soporte</div>
+      <h2>Preguntas frecuentes</h2>
+      <div class="divider"></div>
+
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>¿Los clientes necesitan descargar una app?</summary>
+          <div class="faq-answer">No. GymOS funciona desde el navegador del celular sin descargas ni instalaciones. Si querés, podés instalarlo como PWA desde Safari o Chrome (Compartir → Agregar a inicio) para tener el ícono en la pantalla de inicio.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Cuántos clientes puedo cargar?</summary>
+          <div class="faq-answer">En el Plan Gratuito hasta 3 clientes. En el Plan Pro, clientes ilimitados.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Puedo cancelar cuando quiero?</summary>
+          <div class="faq-answer">Sí. No hay contratos de permanencia. Se paga mes a mes y se cancela en cualquier momento desde el panel de configuración.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Los datos de mis clientes están seguros?</summary>
+          <div class="faq-answer">Sí. GymOS usa base de datos con cifrado y backups automáticos. Cada gimnasio solo ve sus propios datos. Las contraseñas nunca se almacenan en texto plano.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Funciona desde la computadora también?</summary>
+          <div class="faq-answer">Sí. Tanto el panel del admin como el del cliente funcionan desde celular, tablet o computadora en cualquier navegador.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Olvidé mi contraseña, qué hago?</summary>
+          <div class="faq-answer">En la pantalla de login hacé clic en "¿Olvidaste tu contraseña?" e ingresá tu email. Te llega un link para restablecerla.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Qué pasa si mi membresía vence?</summary>
+          <div class="faq-answer">El sistema te avisa con 3 días de anticipación tanto al admin como al cliente. Podés seguir usando la app pero se recomienda renovar para mantener todo actualizado.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Puedo cambiar la rutina de un alumno?</summary>
+          <div class="faq-answer">Sí. Podés reasignar una rutina diferente desde "Asignar rutinas" en cualquier momento. La nueva rutina reemplaza a la anterior.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Cómo se paga la suscripción?</summary>
+          <div class="faq-answer">A través de Mercado Pago con tarjeta de débito, crédito o dinero en cuenta.</div>
+        </details>
+        <details class="faq-item">
+          <summary>¿Qué pasa si tengo un problema técnico?</summary>
+          <div class="faq-answer">El Plan Pro incluye soporte prioritario. En el plan gratuito tenés acceso a esta documentación. También podés escribirnos por Instagram.</div>
+        </details>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">gymOS</div>
+    <div class="footer-copy">Software para gimnasios · 2026</div>
+    <a href="https://gymos-puce.vercel.app" class="footer-link" target="_blank">gymos-puce.vercel.app →</a>
+  </footer>
+
+</main>
+
+<script>
+  // ── Mobile menu ────────────────────────────────────────────────────────────
+  const hamburger = document.getElementById('hamburger');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('overlay');
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  });
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  });
+
+  // ── Active nav on scroll ───────────────────────────────────────────────────
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Close sidebar on nav click (mobile)
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+  });
+</script>
+</body>
+</html>

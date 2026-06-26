@@ -83,12 +83,13 @@ export default function Landing() {
         <div className="landing-cta landing-fade-in landing-delay-3">
           <Link to="/register" className="gbtn landing-cta-btn">🚀 Empezar por $17.000</Link>
           <a
-            href="/guia-gymos.pdf"
-            download="GymOS_Guia_Completa.pdf"
+            href="/guia-gymos.html"
+            target="_blank"
+            rel="noopener noreferrer"
             className="obtn landing-cta-btn"
             style={{display:'inline-flex', alignItems:'center', gap:8, marginTop:12}}
           >
-            📄 Descargar guía gratis
+            📖 Ver guía completa
           </a>
         </div>
       </div>
