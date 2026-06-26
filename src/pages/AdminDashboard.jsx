@@ -90,7 +90,7 @@ export default function AdminDashboard() {
       if (error) throw error
       if (data?.error) throw new Error(JSON.stringify(data.error))
       if (data?.init_point) {
-        window.location.href = data.init_point // pago inicial $1500
+        window.location.href = data.init_point // primer mes $17.000
       }
     } catch (err) {
       alert('Error al iniciar la suscripción: ' + err.message)
@@ -403,7 +403,7 @@ export default function AdminDashboard() {
             ) : (
               <div style={{display:'flex', gap:8, alignItems:'center'}}>
                 <button className="gbtn sub-btn" onClick={handleSubscribe} disabled={subLoading}>
-                  💳 Activar membresía — $29.999/mes
+                  💳 Activar membresía — $17.000 primer mes
                 </button>
                 <button className="gbtn" onClick={checkPayment} disabled={subLoading}
                   style={{background:'transparent', border:'1px solid #666', color:'#ccc', fontSize:12, padding:'6px 12px'}}>
@@ -457,6 +457,40 @@ export default function AdminDashboard() {
                     <div className="stat-sub muted">{isPro ? '$29.999 / mes' : 'Hasta 3 clientes'}</div>
                   </div>
                 </div>
+
+                {!isPro && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(0,180,216,.08), rgba(0,180,216,.03))',
+                    border: '1px solid rgba(0,180,216,.25)',
+                    borderRadius: 12,
+                    padding: '16px 20px',
+                    marginBottom: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    flexWrap: 'wrap',
+                  }}>
+                    <div>
+                      <div style={{color:'#00B4D8', fontWeight:700, fontSize:14, marginBottom:3}}>
+                        🚀 Pasate al Plan Pro
+                      </div>
+                      <div style={{color:'#8B949E', fontSize:13}}>
+                        Clientes ilimitados · <span style={{color:'#f0f0f0', fontWeight:600}}>$17.000 el primer mes</span>, luego $29.999/mes · Sin contratos
+                      </div>
+                    </div>
+                    <div style={{display:'flex', gap:8, alignItems:'center', flexShrink:0}}>
+                      <button className="gbtn" onClick={handleSubscribe} disabled={subLoading}
+                        style={{fontSize:13, padding:'8px 16px'}}>
+                        {subLoading ? 'Cargando...' : '💳 Activar por $17.000'}
+                      </button>
+                      <button onClick={checkPayment} disabled={subLoading}
+                        style={{background:'transparent', border:'1px solid #444', color:'#aaa', fontSize:12, padding:'7px 12px', borderRadius:8, cursor:'pointer'}}>
+                        ✓ Ya pagué
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {clients.length === 0 && (
                   <div className="empty-state">
