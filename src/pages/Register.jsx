@@ -78,29 +78,24 @@ export default function Register() {
 
       // 4. Plan Pro → llamar a Edge Function de MercadoPago y redirigir al pago
       if (plan === 'pro') {
-        const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL
-        const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY
-
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/mercadopago`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            action: 'create_subscription',
-            gym_id: gymRow.id,
-            email:  accData.email,
+        const { data: mpData, error: mpError } = await supabase.functions.invoke('mercadopago', {
+          body: {
+            action:   'create_subscription',
+            gym_id:   gymRow.id,
+            email:    accData.email,
             back_url: `${window.location.origin}/admin`,
-          }),
+          },
         })
 
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Error al iniciar la suscripción')
+        if (mpError) throw new Error(mpError.message || 'Error al iniciar la suscripción')
+        if (mpData?.error) throw new Error(JSON.stringify(mpData.error))
 
-        // Redirigir a MercadoPago
-        window.location.href = data.init_point
-        return
+        if (mpData?.init_point) {
+          window.location.href = mpData.init_point
+          return
+        }
+
+        throw new Error('No se recibió el link de pago de MercadoPago')
       }
 
       // Plan Free → ir directo al panel
